@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>STONX · غرفة مشاهدة</title>
+<link rel="preconnect" href="https://res.cloudinary.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#07080b; --fg:#eef0f3; --mut:#8a909c; --acc:#38e07b; --red:#ff3b4e; --line:#1f232c; --card:#111319ee; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; background:#000; color:var(--fg); font-family:Cairo,system-ui,sans-serif; overflow:hidden; }
+  button { font:inherit; color:inherit; }
+  video { position:fixed; inset:0; width:100%; height:100%; object-fit:contain; background:#000; opacity:0; transition:opacity .2s; }
+  video.on { opacity:1; }
+
+  .top { position:fixed; top:0; inset-inline:0; z-index:5; display:flex; align-items:center; gap:8px; padding:max(12px,env(safe-area-inset-top)) 12px 34px;
+         background:linear-gradient(#000d,#0000); transition:opacity .35s; }
+  .brand { font-weight:800; letter-spacing:.18em; font-size:12px; color:var(--mut); }
+  .title { font-weight:800; font-size:15px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pill { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:800; padding:5px 11px; border-radius:99px; background:#ffffff14; border:0; cursor:pointer; white-space:nowrap; }
+  .live { background:#ff3b4e26; color:var(--red); cursor:default; }
+  .live i { width:7px; height:7px; border-radius:50%; background:currentColor; animation:pulse 1.4s infinite; }
+  .live.off { background:#ffffff14; color:var(--mut); } .live.off i { animation:none; }
+  @keyframes pulse { 50% { opacity:.25; } }
+
+  .bar { position:fixed; bottom:0; inset-inline:0; z-index:5; padding:40px 12px max(12px,env(safe-area-inset-bottom)); background:linear-gradient(#0000,#000e);
+         transition:opacity .35s; direction:ltr; }
+  .row { display:flex; align-items:center; gap:6px; }
+  .ib { background:none; border:0; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; cursor:pointer; flex:none; }
+  .ib:active { background:#ffffff1f; } .ib svg { width:24px; height:24px; fill:currentColor; }
+  .ib.big svg { width:30px; height:30px; }
+  .ib small { font-size:10px; font-weight:800; }
+  .seekwrap { position:relative; height:22px; display:flex; align-items:center; margin-bottom:4px; }
+  .track { position:absolute; inset-inline:0; height:4px; border-radius:4px; background:#ffffff2e; overflow:hidden; }
+  .track b { display:block; height:100%; width:0; background:var(--red); }
+  .seek { position:absolute; inset:0; width:100%; opacity:0; cursor:pointer; }
+  .ctl .seekwrap:hover .track { height:6px; }
+  .time { font-variant-numeric:tabular-nums; font-size:13px; color:#d6d9df; margin-inline:6px; white-space:nowrap; }
+  .grow { flex:1; }
+  input[type=range].vol { width:70px; accent-color:#fff; }
+  .only-ctl { display:none; } .ctl .only-ctl { display:grid; } .ctl .only-ctl.inline { display:inline-flex; }
+  .idle .top, .idle .bar { opacity:0; pointer-events:none; } .idle { cursor:none; }
+
+  .layer { position:fixed; inset:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
+  .gate { z-index:20; background:radial-gradient(circle at 50% 35%, #12201a 0%, #07080b 65%); }
+  .gate h1 { font-size:clamp(24px,7vw,42px); font-weight:800; }
+  .gate p, .layer p { color:var(--mut); max-width:430px; line-height:1.8; }
+  .gate input { font:inherit; width:100%; max-width:320px; background:#0b0d12; border:1px solid var(--line); color:var(--fg); border-radius:14px; padding:13px; text-align:center; }
+  .btn { font-weight:800; font-size:17px; padding:13px 30px; border-radius:99px; border:0; background:var(--acc); color:#04140a; cursor:pointer; }
+  .btn.sec { background:#1d212a; color:var(--fg); border:1px solid var(--line); }
+  .btn:disabled { opacity:.6; }
+  .msg { background:#000b; display:none; pointer-events:none; } .msg.show { display:flex; } .msg .btn { pointer-events:auto; }
+  .msg h2 { font-size:21px; }
+  .spin { width:34px; height:34px; border:3px solid #ffffff22; border-top-color:var(--acc); border-radius:50%; animation:r 1s linear infinite; }
+  @keyframes r { to { transform:rotate(360deg); } }
+  .buffer { position:fixed; top:50%; left:50%; margin:-17px 0 0 -17px; z-index:4; display:none; } .buffer.show { display:block; }
+  .count { font-size:64px; font-weight:800; color:#fff; text-shadow:0 0 40px #000; }
+
+  .panel { position:fixed; z-index:15; top:max(56px,calc(env(safe-area-inset-top) + 48px)); inset-inline-end:10px; width:min(330px,calc(100vw - 20px));
+           background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:14px; display:none; max-height:75vh; overflow:auto; }
+  .panel.show { display:block; }
+  .panel h3 { font-size:14px; margin-bottom:10px; color:#cfd3da; }
+  .mem { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .mem:last-child { border:0; } .mem span { flex:1; } .mem .x { background:none; border:0; color:var(--red); cursor:pointer; font-size:14px; }
+  .menu button { display:block; width:100%; text-align:start; background:#1a1e26; border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:8px; cursor:pointer; font-weight:600; }
+  .menu button.dan { color:var(--red); }
+  .menu .hint { font-size:12px; color:var(--mut); line-height:1.7; margin-top:4px; }
+
+  .up { position:fixed; z-index:14; bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px)); left:50%; transform:translateX(-50%); width:min(420px,calc(100vw - 20px));
+        background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:14px 16px; display:none; }
+  .up.show { display:block; } .up { cursor:pointer; }
+  @media (max-width:520px) { .top .brand { display:none; } .top { gap:6px; } .pill { padding:5px 9px; } }
+  .up .l1 { font-weight:800; font-size:14px; margin-bottom:8px; } .up .l2 { font-size:12px; color:var(--mut); margin-top:8px; line-height:1.6; }
+  .pb { height:6px; border-radius:6px; background:#ffffff1f; overflow:hidden; } .pb b { display:block; height:100%; width:0; background:var(--acc); transition:width .3s; }
+  .pb.ind b { width:30%; animation:ind 1.2s infinite ease-in-out; } @keyframes ind { from { margin-left:-30%; } to { margin-left:100%; } }
+  .toast { position:fixed; z-index:30; top:max(70px,calc(env(safe-area-inset-top) + 60px)); left:50%; transform:translateX(-50%); background:#222733f2; padding:9px 18px; border-radius:99px; font-size:14px; display:none; white-space:nowrap; }
+</style>
+</head>
+<body>
+<video id="vA" playsinline webkit-playsinline preload="auto"></video>
+<video id="vB" playsinline webkit-playsinline preload="auto"></video>
+<div class="buffer" id="buffer"><div class="spin"></div></div>
+
+<div class="top">
+  <span class="brand">STONX</span>
+  <span class="title" id="title">غرفة مشاهدة</span>
+  <span class="pill live off" id="live"><i></i><span id="liveTxt">مستني</span></span>
+  <span class="pill" id="netPill" style="display:none;cursor:default"></span>
+  <button class="pill" id="prepPill" style="display:none"></button>
+  <span class="pill" id="peerPill" style="cursor:default">⏳</span>
+  <button class="pill" id="shareBtn">🔗 شارك</button>
+  <button class="pill" id="menuBtn">⚙️</button>
+</div>
+
+<div class="panel menu" id="menu">
+  <h3>الفيلم</h3>
+  <button id="pickBtn">🎬 اختار فيلم من جهازي</button>
+  <button class="dan" id="deleteBtn">🗑️ امسح الفيلم</button>
+  <p class="hint">الفيلم بيروح من جهازك للتاني مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم كله وصل».</p>
+</div>
+<input type="file" id="file" accept="video/*,.mkv" hidden>
+
+<div class="up" id="up">
+  <div class="l1" id="upTitle">بنجهّز…</div>
+  <div class="pb" id="pb"><b id="pbB"></b></div>
+  <div class="l2" id="upSub"></div>
+</div>
+
+<div class="bar" id="bar">
+  <div class="seekwrap"><div class="track"><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
+  <div class="row">
+    <button class="ib big" id="playBtn" aria-label="تشغيل"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="ib" id="back10" aria-label="رجوع 10"><small>−10</small></button>
+    <button class="ib" id="fwd10" aria-label="تقديم 10"><small>+10</small></button>
+    <span class="time" id="time">0:00 / 0:00</span>
+    <span class="grow"></span>
+    <button class="ib" id="muteBtn" aria-label="الصوت"><svg viewBox="0 0 24 24" id="volIcon"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg></button>
+    <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="1">
+    <button class="ib" id="fsBtn" aria-label="ملء الشاشة"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+  </div>
+</div>
+
+<div class="layer msg" id="msg"><div id="msgIcon"></div><h2 id="msgH"></h2><p id="msgP"></p><button class="btn" id="msgBtn" style="display:none"></button></div>
+
+<div class="layer gate" id="gate">
+  <span class="brand">STONX · WATCH TOGETHER</span>
+  <h1 id="gateTitle">غرفة مشاهدة</h1>
+  <p id="gateSub">الفيلم بيروح من جهاز لجهاز مباشرة، وانتوا الاتنين بتشوفوا نفس اللقطة في نفس الثانية.</p>
+  <input id="nameIn" placeholder="اسمك" maxlength="24">
+  <button class="btn" id="joinBtn">ادخل الغرفة ▶</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/vendor/peerjs.min.js"></script>
+<script type="module">
+// =====================================================================
+//  STONX Watch Together — two people, one movie, no servers in between.
+//  • PeerJS's free broker only introduces the two browsers; then everything
+//    (controls, clock sync, the movie itself) flows directly between them.
+//  • Whoever picks the movie cuts it into small MP4 parts (first one tiny,
+//    so playback starts in seconds) and streams them to the other side,
+//    which keeps downloading the whole movie in the background and stores it
+//    in IndexedDB, so refreshes and network hiccups cost nothing.
+//  • If either side runs dry, both pause and resume together automatically.
+// =====================================================================
+const $ = (id) => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const roomId = ((location.pathname.match(/\/r\/([a-z0-9]{4,12})/i) || [])[1] || qs.get('r') || '').toLowerCase();
+const MASTER_ID = 'stonx-wr2-' + roomId;
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+let cid = store.get('wr_cid'); if (!cid) { cid = [...crypto.getRandomValues(new Uint8Array(10))].map((b) => b.toString(16).padStart(2, '0')).join(''); store.set('wr_cid', cid); }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const fmt = (s) => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+const toast = (t) => { const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(el._t); el._t = setTimeout(() => (el.style.display = 'none'), 2800); };
+const pill = (id, t) => { const el = $(id); el.style.display = t ? '' : 'none'; el.textContent = t || ''; };
+
+// ---------------- local persistence ----------------
+const SKEY = 'wr2_room_' + roomId;
+let room = (() => { try { return JSON.parse(store.get(SKEY)) || null; } catch (e) { return null; } })() ||
+  { v: 0, title: store.get('wr2_title_' + roomId) || 'غرفة مشاهدة', movie: null, status: 'stopped', startedAt: 0, base: 0, pausedAt: 0, auto: false };
+const saveRoom = () => store.set(SKEY, JSON.stringify(room));
+
+const idb = (() => {
+  let dbp = null;
+  const open = () => (dbp = dbp || new Promise((ok, bad) => {
+    const r = indexedDB.open('stonx-watch', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('parts');
+    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+  }));
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((ok, bad) => { const t = db.transaction('parts', mode); const st = t.objectStore('parts'); const res = fn(st); t.oncomplete = () => ok(res && res.result); t.onerror = () => bad(t.error); }); };
+  return {
+    put: (k, v) => tx('readwrite', (s) => s.put(v, k)),
+    get: (k) => tx('readonly', (s) => s.get(k)),
+    keys: () => tx('readonly', (s) => s.getAllKeys()),
+    del: (range) => tx('readwrite', (s) => s.delete(range)),
+  };
+})();
+const partKey = (mid, i) => `${mid}:${String(i).padStart(5, '0')}`;
+
+// ---------------- state ----------------
+let peer = null, ctl = null, dat = null, isMaster = false, connected = false, peerName = '', peerCid = '';
+let offset = 0; // add to Date.now() to get the master's clock
+let stopped = false, joined = false, volume = 1, muted = false, dragging = false;
+const have = new Set();          // part indexes stored on this device for room.movie
+const urls = new Map();          // part index -> object URL (only for the few parts near the playhead)
+const waiters = new Map();       // part index -> resolvers waiting for it (source side)
+let preparing = false, sourceFile = null;
+let quick = null;                   // fast cutter of the picked file: builds any part instantly, out of order
+const building = new Map();
+function ensurePart(i) {
+  if (have.has(i) || !quick || !room.movie || quick.mid !== room.movie.id || i < 0 || i >= parts().length) return null;
+  if (building.has(i)) return building.get(i);
+  const mid = quick.mid;
+  const job = quick.build(i).then(async (blob) => {
+    const rec = { blob, trim: 0 };
+    await idb.put(partKey(mid, i), rec);
+    if (room.movie && room.movie.id === mid) { have.add(i); (waiters.get(i) || []).forEach((r) => r(rec)); waiters.delete(i); }
+  }).catch((e) => console.warn('ensurePart', e)).finally(() => building.delete(i));
+  building.set(i, job);
+  return job;
+}
+let myBuffering = false, peerBuffering = false, lastBufSent = null;
+const vids = [$('vA'), $('vB')]; let active = 0, loaded = [null, null];
+
+const parts = () => (room.movie ? room.movie.parts : []);
+const total = () => parts().reduce((a, p) => a + p.duration, 0);
+const now = () => Date.now() + offset;
+const position = () => (room.status === 'playing' ? (room.base || 0) + Math.max(0, now() - room.startedAt) / 1000 : room.pausedAt || 0);
+const iAmSource = () => !!(room.movie && room.movie.src === cid);
+function locate(pos) { let acc = 0; const ps = parts(); for (let i = 0; i < ps.length; i++) { if (pos < acc + ps[i].duration) return { i, t: pos - acc }; acc += ps[i].duration; } return null; }
+const currentIndex = () => { const l = locate(Math.max(0, position())); return l ? l.i : 0; };
+
+async function loadHave() {
+  have.clear();
+  if (!room.movie) return;
+  const prefix = room.movie.id + ':';
+  for (const k of await idb.keys()) if (String(k).startsWith(prefix)) have.add(+String(k).slice(prefix.length));
+}
+
+// ---------------- the shared room state (owned by the master) ----------------
+function applyRoom(next, from) {
+  const movieChanged = (next.movie && next.movie.id) !== (room.movie && room.movie.id);
+  room = next; saveRoom();
+  $('title').textContent = $('gateTitle').textContent = room.title; document.title = 'STONX · ' + room.title;
+  if (movieChanged) {
+    for (const [k, u] of urls) if (typeof k === 'number') URL.revokeObjectURL(u);
+    urls.clear(); trims.clear(); loaded = [null, null]; inflight.clear(); peerProgress = null;
+    vids.forEach((v) => { v.removeAttribute('src'); v.load(); });
+    const keep = room.movie ? room.movie.id + ':' : '\u0000';
+    idb.keys().then((ks) => Promise.all(ks.filter((k) => !String(k).startsWith(keep)).map((k) => idb.del(k)))).catch(() => {}).then(loadHave).then(pumpWants);
+  }
+}
+function commit(mut) {          // master only: change state and broadcast
+  mut(room); room.v++; applyRoom({ ...room });
+  send({ t: 'room', room });
+}
+function act(action, extra = {}) {  // anyone: request a change
+  if (isMaster || !connected) return handleAct({ action, ...extra });
+  send({ t: 'act', action, ...extra });
+}
+function handleAct(a) {
+  const T = total(), pos = Math.min(Math.max(position(), 0), T);
+  commit((r) => {
+    if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; }
+    if (a.action === 'pause') { r.status = 'paused'; r.pausedAt = pos; r.auto = !!a.auto; }
+    if (a.action === 'seek') { const to = Math.min(Math.max(+a.to || 0, 0), T); if (r.status === 'playing') { r.base = to; r.startedAt = now() + 800; } else { r.status = 'paused'; r.pausedAt = to; } }
+    if (a.action === 'movie') { r.movie = a.movie; r.status = 'paused'; r.pausedAt = 0; r.auto = false; }
+    if (a.action === 'delete') { r.movie = null; r.status = 'stopped'; r.pausedAt = 0; }
+  });
+}
+// both pause while anyone is still loading, and carry on together once ready
+function checkWaiting() {
+  if (!isMaster) return;
+  const someone = myBuffering || (connected && peerBuffering);
+  if (someone && room.status === 'playing') handleAct({ action: 'pause', auto: true });
+  else if (!someone && room.status === 'paused' && room.auto) handleAct({ action: 'play', auto: true });
+}
+
+// ---------------- connection ----------------
+function peerOpts() {
+  const o = { debug: 1 };
+  const ps = qs.get('ps'); // local test broker: ?ps=host:port
+  if (ps) { const [host, port] = ps.split(':'); Object.assign(o, { host, port: +port, path: '/', secure: false, config: { iceServers: [] } }); }
+  return o;
+}
+function send(m) { if (ctl && ctl.open) ctl.send(m); }
+function setPeerPill() {
+  $('peerPill').textContent = connected ? `🟢 ${peerName || 'التاني'} معاك` : '⏳ مستني التاني';
+}
+function wireCtl(c) {
+  const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || 'ضيف', room, pos: position() });
+  c.on('open', hello);
+  c.on('data', (m) => onCtl(m, c));
+  c.on('close', () => { if (ctl === c) lostPeer(); });
+  c.on('error', () => {});
+  if (c.open) hello();
+}
+function wireDat(c) {
+  dat = c;
+  c.on('data', onData);
+  c.on('close', () => { if (dat === c) dat = null; });
+}
+function lostPeer() {
+  connected = false; ctl = null; peerBuffering = false; inflight.clear(); setPeerPill();
+  if (!isMaster) setTimeout(connect, 1500);
+}
+async function connect() {
+  if (stopped) return;
+  if (peer) try { peer.destroy(); } catch (e) {}
+  connected = false; setPeerPill();
+  // try to own the room (master); if someone already does, join them
+  const asMaster = await new Promise((resolve) => {
+    const p = new Peer(MASTER_ID, peerOpts());
+    p.on('open', () => resolve(p));
+    p.on('error', (e) => { if (e.type === 'unavailable-id') { p.destroy(); resolve(null); } else if (!p.open) { p.destroy(); resolve('err'); } });
+  });
+  if (asMaster === 'err') { $('peerPill').textContent = '⚠️ مشكلة اتصال، بنحاول تاني…'; return setTimeout(connect, 4000); }
+  if (asMaster) {
+    peer = asMaster; isMaster = true;
+    if (offset && room.startedAt) { room.startedAt -= offset; saveRoom(); }  // re-express times on my own clock
+    offset = 0;
+    peer.on('connection', (c) => (c.label === 'data' ? wireDat(c) : wireCtl(c)));
+    peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+    setPeerPill();
+    return;
+  }
+  isMaster = false;
+  peer = new Peer(undefined, peerOpts());
+  peer.on('open', () => {
+    wireCtl(peer.connect(MASTER_ID, { label: 'ctl', reliable: true, serialization: 'json' }));
+    wireDat(peer.connect(MASTER_ID, { label: 'data', reliable: true, serialization: 'raw' }));
+    setTimeout(() => { if (!connected) connect(); }, 12000);
+  });
+  peer.on('error', (e) => { if (e.type === 'peer-unavailable') setTimeout(connect, 2500); });
+}
+
+async function syncClock() {
+  // NTP-style: keep the fastest of several round trips
+  let best = null;
+  for (let i = 0; i < 6 && connected && !isMaster; i++) {
+    const r = await new Promise((ok) => { const t0 = Date.now(); pongWait = (m) => ok({ rtt: Date.now() - t0, off: m.t1 + (Date.now() - t0) / 2 - Date.now() }); send({ t: 'ping', t0 }); setTimeout(() => ok(null), 3000); });
+    if (r && (!best || r.rtt < best.rtt)) best = r;
+    await sleep(150);
+  }
+  if (best) offset = best.off;
+}
+let pongWait = null;
+setInterval(() => { if (connected && !isMaster) syncClock(); }, 30000);
+
+function onCtl(m, c) {
+  if (!m || typeof m !== 'object') return;
+  if (m.t !== 'hello' && c !== ctl) return;
+  if (m.t === 'full') { stopped = true; showFatal('الغرفة دي فيها اتنين بالفعل', 'الغرفة معمولة لشخصين بس.'); try { peer.destroy(); } catch (e) {} return; }
+  if (m.t === 'ping') return send({ t: 'pong', t0: m.t0, t1: Date.now() });
+  if (m.t === 'pong') { if (pongWait) { const f = pongWait; pongWait = null; f(m); } return; }
+  if (m.t === 'hello') {
+    // a room is for two: a third browser gets turned away
+    if (isMaster && ctl && ctl !== c && ctl.open && peerCid && m.cid !== peerCid) { c.send({ t: 'full' }); setTimeout(() => c.close(), 500); return; }
+    if (ctl && ctl !== c) { const old = ctl; ctl = c; try { old.close(); } catch (e) {} }
+    ctl = c; connected = true;
+    const fresh = peerCid !== m.cid; peerName = m.name; peerCid = m.cid; setPeerPill();
+    if (fresh) toast(`🟢 ${m.name} معاك في الغرفة`);
+    if (isMaster) {
+      // a freshly started master adopts the guest's memory of the room if it is newer
+      if (m.room && m.room.v > room.v) { const r = { ...m.room }; if (r.status === 'playing') { r.status = 'paused'; r.pausedAt = Math.max(0, +m.pos || 0); r.auto = false; } applyRoom(r); }
+      commit(() => {});
+    } else syncClock();
+    pumpWants();
+    return;
+  }
+  if (m.t === 'room') { applyRoom(m.room); pumpWants(); return; }
+  if (m.t === 'act') { if (isMaster) handleAct(m); return; }
+  if (m.t === 'buf') { peerBuffering = !!m.on; checkWaiting(); return; }
+  if (m.t === 'prog') { peerProgress = m; return; }
+  if (m.t === 'want') { serveQueue.push(m.i); serve(); return; }
+}
+
+// ---------------- moving the movie ----------------
+const CHUNK = 64 * 1024, HIGH = 8 * 1024 * 1024;
+const serveQueue = []; let serving = false, peerProgress = null;
+function getPart(i) {
+  if (have.has(i)) return idb.get(partKey(room.movie.id, i));
+  ensurePart(i);
+  return new Promise((r) => { if (!waiters.has(i)) waiters.set(i, []); waiters.get(i).push(r); });
+}
+async function serve() {
+  if (serving) return; serving = true;
+  try {
+    while (serveQueue.length) {
+      const i = serveQueue.shift();
+      if (!iAmSource() || !dat || !dat.open) continue;
+      const rec = await getPart(i);
+      const dc = dat.dataChannel; if (!dc || dc.readyState !== 'open') continue;
+      dc.send(JSON.stringify({ t: 'h', mid: room.movie.id, i, size: rec.blob.size, trim: rec.trim }));
+      for (let o = 0; o < rec.blob.size; o += CHUNK) {
+        while (dc.bufferedAmount > HIGH && dc.readyState === 'open') {
+          // wait for the line to drain — but never forever: the other side may have left mid-part
+          await new Promise((r) => { dc.bufferedAmountLowThreshold = HIGH / 2; const t = setTimeout(r, 1000); dc.addEventListener('bufferedamountlow', () => { clearTimeout(t); r(); }, { once: true }); });
+        }
+        if (dc.readyState !== 'open') break;
+        dc.send(await rec.blob.slice(o, o + CHUNK).arrayBuffer());
+      }
+      if (dc.readyState === 'open') dc.send(JSON.stringify({ t: 'e', i }));
+    }
+  } catch (e) { console.warn('serve', e); }
+  serving = false;
+}
+// receiver
+let rx = null; const inflight = new Set(); let rate = 0, rxBytes = 0, rxT0 = Date.now();
+function onData(d) {
+  if (typeof d === 'string') {
+    const m = JSON.parse(d);
+    if (m.t === 'h') { rx = { ...m, bufs: [] }; return; }
+    if (m.t === 'e' && rx && rx.i === m.i) {
+      const r = rx; rx = null;
+      if (!room.movie || r.mid !== room.movie.id) return;
+      const blob = new Blob(r.bufs, { type: 'video/mp4' });
+      idb.put(partKey(r.mid, r.i), { blob, trim: r.trim }).then(() => {
+        have.add(r.i); inflight.delete(r.i);
+        send({ t: 'prog', n: have.size, of: parts().length });
+        pumpWants();
+      });
+    }
+    return;
+  }
+  if (rx) { rx.bufs.push(d); rxBytes += d.byteLength; }
+}
+setInterval(() => { const t = Date.now(); rate = rate * 0.6 + (rxBytes / ((t - rxT0) / 1000)) * 0.4; rxBytes = 0; rxT0 = t; }, 1000);
+// ask for the part we need soonest, keeping two in flight so the line never idles
+function pumpWants() {
+  if (!room.movie || iAmSource() || !connected) return;
+  const n = parts().length, c = currentIndex();
+  for (let d = 0; d < n && inflight.size < 2; d++) {
+    const i = (c + d) % n;
+    if (have.has(i) || inflight.has(i)) continue;
+    inflight.add(i); send({ t: 'want', i });
+  }
+}
+setInterval(pumpWants, 2000);
+
+// ---------------- the source: cut the movie, store it, serve it ----------------
+async function pickMovie(file, resume) {
+  preparing = true; sourceFile = file;
+  let lock = null; try { lock = await navigator.wakeLock?.request('screen'); } catch (_) {}
+  try {
+    upOpen = true; upUI('بنجهّز الفيلم…', null, 'ثواني ويبدأ.');
+    const { splitMovie } = await import('/split.js');
+    let mid = resume ? room.movie.id : 'm' + Date.now().toString(36);
+    if (!resume) { await idb.del(IDBKeyRange.bound('', '\uffff')); have.clear(); }
+    let planned = 0;
+    quick = null;
+    for await (const p of splitMovie(file, {
+      isDone: (k) => have.has(k),
+      onFast: (build) => { quick = { mid, build }; },
+      targetBytes: 12 * 1024 * 1024, firstBytes: 3 * 1024 * 1024,
+      onStage: (t, r) => upUI(t, r),
+      confirmCodec: async (c) => confirm(`الفيديو بصيغة ${c.toUpperCase()} — ممكن مايشتغلش على كل الأجهزة (الأفضل H.264). نكمل؟`),
+      onPlan: async (plan) => {
+        planned = plan.length;
+        if (resume) { if (plan.length !== parts().length) throw new Error('ده مش نفس الملف'); return; }
+        act('movie', { movie: { id: mid, name: file.name.replace(/\.[^.]+$/, ''), src: cid, parts: plan.map((x, i) => ({ i, duration: x.duration })) } });
+        toast('الفيلم جاهز 🎉 تقدر تشغّل خلال ثواني');
+        upOpen = false; $('up').classList.remove('show');  // get out of the way; 🛠️ up top opens it again
+      },
+    })) {
+      if (!have.has(p.index)) {
+        const rec = { blob: p.blob, trim: p.trim };
+        await idb.put(partKey(mid, p.index), rec);
+        have.add(p.index);
+        (waiters.get(p.index) || []).forEach((r) => r(rec)); waiters.delete(p.index);
+      }
+      upUI(`بنجهّز الفيلم: ${p.index + 1} من ${planned}`, (p.index + 1) / planned, 'تقدر تشغّل عادي والباقي بيتجهز.');
+    }
+    setTimeout(upHide, 1500);
+  } catch (e) {
+    upUI('⚠️ ' + (e.message || 'حصلت مشكلة'), 0, 'جرّب تاني، ولو المشكلة اتكررت ابعتلي الرسالة دي.', true);
+    setTimeout(upHide, 12000);
+  } finally { preparing = false; try { lock && lock.release(); } catch (_) {} }
+}
+// the progress card stays tucked away behind the 🛠️ button at the top, so it never covers the movie
+let upOpen = true;
+function upUI(title, ratio, sub, force) {
+  if (force) upOpen = true;
+  $('up').classList.toggle('show', upOpen); $('upTitle').textContent = title;
+  pill('prepPill', '🛠️ ' + (ratio == null ? '…' : Math.round(ratio * 100) + '%'));
+  $('pb').classList.toggle('ind', ratio == null); $('pbB').style.width = ratio == null ? '' : Math.round(ratio * 100) + '%';
+  if (sub != null) $('upSub').textContent = sub;
+}
+
+function upHide() { $('up').classList.remove('show'); pill('prepPill', ''); }
+$('prepPill').onclick = (e) => { e.stopPropagation(); upOpen = !$('up').classList.contains('show'); $('up').classList.toggle('show', upOpen); };
+$('up').onclick = () => { upOpen = false; $('up').classList.remove('show'); };
+
+// ---------------- player ----------------
+function partUrl(i) {
+  if (urls.has(i)) return urls.get(i);
+  if (!have.has(i) || !room.movie) return null;
+  if (!urls.has('L' + i)) {
+    urls.set('L' + i, true);
+    const mid = room.movie.id;
+    idb.get(partKey(mid, i)).then((rec) => { urls.delete('L' + i); if (rec && room.movie && room.movie.id === mid) { urls.set(i, URL.createObjectURL(rec.blob)); trims.set(i, rec.trim || 0); } });
+  }
+  return null;
+}
+const trims = new Map();
+function tidyUrls(c) {
+  for (const [k, u] of urls) if (typeof k === 'number' && (k < c - 1 || k > c + 2) && !loaded.includes(u)) { URL.revokeObjectURL(u); urls.delete(k); }
+}
+function load(k, i) { const u = partUrl(i); if (!u || loaded[k] === u) return; loaded[k] = u; vids[k].src = u; vids[k].load(); }
+function show(k) { active = k; vids.forEach((v, i) => { v.classList.toggle('on', i === k); if (i !== k) { v.pause(); v.muted = true; } }); applyVolume(); }
+function applyVolume() { const v = vids[active]; v.volume = volume; v.muted = muted; $('volIcon').style.opacity = muted ? 0.4 : 1; }
+function message(h, p, icon, btn) {
+  $('msgH').textContent = h || ''; $('msgP').textContent = p || ''; $('msgIcon').innerHTML = icon || '';
+  const b = $('msgBtn'); if (btn) { b.style.display = ''; b.textContent = btn.text; b.onclick = btn.fn; } else b.style.display = 'none';
+  $('msg').classList.toggle('show', !!h);
+}
+function showFatal(h, p) { joined = false; $('gate').style.display = 'flex'; $('gateTitle').textContent = h; $('gateSub').textContent = p; $('nameIn').style.display = 'none'; $('joinBtn').style.display = 'none'; }
+function setBuffering(on) {
+  myBuffering = on;
+  $('buffer').classList.toggle('show', on);
+  if (lastBufSent !== on) { lastBufSent = on; send({ t: 'buf', on }); }
+  checkWaiting();
+}
+let cdEl = null;
+function countdown(sec) {
+  if (sec <= 0) { if (cdEl) { cdEl.remove(); cdEl = null; } return; }
+  if (!cdEl) { cdEl = document.createElement('div'); cdEl.className = 'layer'; cdEl.style.pointerEvents = 'none'; cdEl.innerHTML = '<div class="count"></div>'; document.body.appendChild(cdEl); }
+  cdEl.firstChild.textContent = Math.ceil(sec);
+}
+
+function tick() {
+  if (!joined) return;
+  const T = total(), pos = position(), playing = room.status === 'playing';
+  $('live').classList.toggle('off', !playing);
+  $('liveTxt').textContent = playing ? 'شغّال' : room.auto ? 'بيحمّل…' : room.status === 'paused' ? 'متوقف' : 'مستني';
+  $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+  const shown = Math.min(Math.max(pos, 0), T);
+  $('time').textContent = fmt(dragging ? +$('seek').value : shown) + ' / ' + fmt(T);
+  $('progB').style.width = (T ? ((dragging ? +$('seek').value : shown) / T) * 100 : 0) + '%';
+  $('seek').max = Math.floor(T); if (!dragging) $('seek').value = Math.floor(shown);
+
+  // download / upload indicator
+  if (room.movie) {
+    const n = parts().length;
+    if (iAmSource()) {
+      const got = peerProgress ? peerProgress.n : 0;
+      pill('netPill', connected ? (got >= n ? '✅ الفيلم كله وصل' : `📤 وصل للتاني ${Math.round((got / n) * 100)}%`) : '');
+    } else pill('netPill', have.size >= n ? '✅ الفيلم كله عندك' : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
+  } else pill('netPill', '');
+
+  if (!room.movie) {
+    vids.forEach((v) => v.pause()); setBuffering(false);
+    return message('الغرفة جاهزة 🎬', connected ? 'اختاروا فيلم من جهاز أي حد فيكم.' : 'ابعت رابط الغرفة للي هيتفرج معاك، واختار الفيلم.', '', { text: '🎬 اختار فيلم', fn: () => $('pickBtn').click() });
+  }
+  if (iAmSource() && !have.size && !preparing) {
+    vids.forEach((v) => v.pause());
+    return message('محتاجين ملف الفيلم تاني', 'الفيلم اتختار من الجهاز ده بس ملفاته اتمسحت. اختار نفس الملف تاني.', '', { text: '📂 اختار الملف', fn: () => { $('file').dataset.resume = '1'; $('file').click(); } });
+  }
+  if (iAmSource() && have.size < parts().length && !preparing && !sourceFile) {
+    // page was reloaded mid-way: parts we already cut are safe, the rest needs the file again
+    pill('netPill', '⚠️ اختار الملف تاني علشان نكمّل تجهيز الباقي');
+  }
+  if (!iAmSource() && !connected && !have.has(currentIndex())) {
+    vids.forEach((v) => v.pause()); setBuffering(false);
+    return message('مستنيين التاني…', 'الفيلم بيتبث من جهاز اللي اختاره، ولازم الصفحة عنده تكون مفتوحة.', '<div class="spin"></div>');
+  }
+  const waitStart = playing && now() < room.startedAt;  // short countdown so both start on the same frame
+  countdown(waitStart && !room.auto ? (room.startedAt - now()) / 1000 : 0);
+  if (pos >= T) { vids.forEach((v) => v.pause()); setBuffering(false); return message('انتهى الفيلم 🎬', 'شكرًا إنكم اتفرجتوا سوا ❤️', '', { text: '↺ من الأول', fn: () => act('seek', { to: 0 }) }); }
+  message('');
+
+  const loc = locate(pos); if (!loc) return;
+  const c = loc.i, url = partUrl(c);
+  tidyUrls(c);
+  if (!url) { if (iAmSource()) ensurePart(c); vids.forEach((v) => v.pause()); setBuffering(playing || room.auto); return; }
+  if (iAmSource() && c + 1 < parts().length && !have.has(c + 1)) ensurePart(c + 1);
+  if (loaded[active] !== url) { if (loaded[1 - active] === url) show(1 - active); else load(active, c); }
+  if (c + 1 < parts().length && parts()[c].duration - loc.t < 20) load(1 - active, c + 1);
+
+  const el = vids[active];
+  if (el.readyState >= 3 || (!playing && el.readyState >= 2)) { stallSince = 0; setBuffering(false); }
+  else if (playing || room.auto) { stallSince = stallSince || Date.now(); if (Date.now() - stallSince > 1500) setBuffering(true); }
+  if (el.readyState < 1) return;
+  const target = (trims.get(c) || 0) + loc.t, diff = target - el.currentTime;
+  if (playing && waitStart) { if (!el.paused) el.pause(); if (Math.abs(diff) > 0.12) el.currentTime = target; return; }
+  if (playing) {
+    if (Math.abs(diff) > 1.0) { el.currentTime = target; el.playbackRate = 1; }
+    else if (Math.abs(diff) > 0.1) el.playbackRate = 1 + Math.max(-0.07, Math.min(0.07, diff * 0.5));
+    else el.playbackRate = 1;
+    if (el.paused) el.play().catch(() => { if (!muted) { muted = true; applyVolume(); toast('🔇 دوس على الصوت علشان تسمع'); } el.play().catch(() => {}); });
+  } else {
+    if (!el.paused) el.pause();
+    if (Math.abs(diff) > 0.12) el.currentTime = target;
+  }
+}
+let stallSince = 0;
+
+// ---------------- controls ----------------
+$('playBtn').onclick = () => act(room.status === 'playing' ? 'pause' : 'play');
+$('back10').onclick = () => act('seek', { to: position() - 10 });
+$('fwd10').onclick = () => act('seek', { to: position() + 10 });
+$('seek').addEventListener('input', () => { dragging = true; });
+$('seek').addEventListener('change', (e) => { dragging = false; act('seek', { to: +e.target.value }); });
+$('muteBtn').onclick = () => { muted = !muted; if (!muted && volume === 0) { volume = 1; $('vol').value = 1; } applyVolume(); };
+$('vol').oninput = (e) => { volume = +e.target.value; muted = volume === 0; applyVolume(); };
+$('fsBtn').onclick = () => {
+  const d = document.documentElement, v = vids[active];
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (d.requestFullscreen) d.requestFullscreen().catch(() => v.webkitEnterFullscreen && v.webkitEnterFullscreen());
+  else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+};
+$('menuBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.toggle('show'); };
+document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) $('menu').classList.remove('show'); });
+$('pickBtn').onclick = () => {
+  if (preparing) return toast('في فيلم بيتجهز بالفعل');
+  if (room.movie && !confirm('ده هيغيّر الفيلم الحالي عند الاتنين. نكمل؟')) return;
+  $('menu').classList.remove('show'); delete $('file').dataset.resume; $('file').click();
+};
+$('file').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) pickMovie(f, !!$('file').dataset.resume); };
+$('deleteBtn').onclick = async () => {
+  if (!room.movie || !confirm('تمسح الفيلم من الغرفة؟')) return;
+  act('delete'); $('menu').classList.remove('show');
+};
+$('shareBtn').onclick = async () => {
+  const url = location.origin + '/r/' + roomId;
+  try { if (navigator.share) await navigator.share({ title: 'تعالى نتفرج سوا 🎬', url }); else { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } }
+  catch (e) { try { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } catch (_) { prompt('انسخ الرابط:', url); } }
+};
+addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); $('playBtn').click(); } });
+addEventListener('beforeunload', (ev) => { if (iAmSource() && connected && (!peerProgress || peerProgress.n < parts().length)) { ev.preventDefault(); ev.returnValue = ''; } });
+let idleT; const wake = () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => { if (joined && room.status === 'playing') document.body.classList.add('idle'); }, 3500); };
+['mousemove', 'touchstart', 'keydown', 'click'].forEach((e) => addEventListener(e, wake, { passive: true })); wake();
+// old files from other movies are cleaned up when a new one starts; ask the browser not to evict ours
+navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {});
+
+// ---------------- join ----------------
+$('nameIn').value = store.get('wr_name') || '';
+$('title').textContent = $('gateTitle').textContent = room.title;
+async function join() {
+  const name = $('nameIn').value.trim() || 'ضيف';
+  store.set('wr_name', name);
+  vids.forEach((v) => { v.muted = true; v.play().catch(() => {}); v.pause(); });  // unlock playback inside the tap
+  joined = true; muted = false; show(0);
+  $('gate').style.display = 'none';
+  await loadHave();
+  connect();
+}
+$('joinBtn').onclick = join;
+$('nameIn').onkeydown = (e) => e.key === 'Enter' && join();
+if (!roomId) showFatal('رابط غلط', 'افتح رابط الغرفة اللي اتبعتلك.');
+setInterval(tick, 300);
+setPeerPill();
+window.__wr = { get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080b">
+<title>STONX · غرف المشاهدة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#07080b; --fg:#eef0f3; --mut:#8a909c; --acc:#38e07b; --line:#1f232c; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { min-height:100vh; background:radial-gradient(circle at 50% 30%, #12201a 0%, #07080b 60%); color:var(--fg); font-family:Cairo,system-ui,sans-serif;
+         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:24px; text-align:center; }
+  .brand { font-weight:800; letter-spacing:.25em; font-size:13px; color:var(--mut); }
+  h1 { font-size:clamp(30px,8vw,54px); font-weight:800; line-height:1.2; }
+  h1 span { color:var(--acc); }
+  p { color:var(--mut); max-width:460px; line-height:1.9; }
+  .box { width:100%; max-width:380px; display:flex; flex-direction:column; gap:12px; }
+  input { font:inherit; width:100%; background:#0b0d12cc; border:1px solid var(--line); color:var(--fg); border-radius:14px; padding:13px 16px; text-align:center; }
+  button { font:inherit; font-weight:800; font-size:17px; padding:14px; border-radius:14px; border:0; cursor:pointer; }
+  .pri { background:var(--acc); color:#04140a; box-shadow:0 10px 40px #38e07b33; }
+  .sec { background:#1a1e26; color:var(--fg); border:1px solid var(--line); }
+  .or { color:var(--mut); font-size:13px; }
+  .feat { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#b9bec7; }
+  .feat span { background:#ffffff0d; border:1px solid var(--line); padding:6px 12px; border-radius:99px; }
+</style>
+</head>
+<body>
+  <span class="brand">STONX · WATCH TOGETHER</span>
+  <h1>اتفرجوا <span>سوا</span><br>في نفس الثانية</h1>
+  <p>اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للتاني مباشرة بجودته الأصلية، وانتوا بتتكلموا على واتساب، حتى لو كل واحد في بلد.</p>
+  <div class="feat"><span>👥 لشخصين</span><span>🎮 الاتنين بيتحكموا</span><span>🎬 أي طول وأي حجم</span><span>🔒 من جهاز لجهاز</span></div>
+  <div class="box">
+    <input id="title" placeholder="اسم الغرفة (اختياري)" maxlength="40">
+    <button class="pri" id="create">اعمل غرفة جديدة</button>
+    <span class="or">أو</span>
+    <input id="code" placeholder="كود الغرفة أو الرابط" dir="ltr">
+    <button class="sec" id="join">ادخل غرفة</button>
+  </div>
+<script>
+const $ = (id) => document.getElementById(id);
+$('create').onclick = () => {
+  const code = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
+  try { const t = $('title').value.trim(); if (t) localStorage.setItem('wr2_title_' + code, t); } catch (e) {}
+  location.href = '/r/' + code;
+};
+$('join').onclick = () => {
+  const v = $('code').value.trim(); const m = v.match(/([a-z0-9]{4,12})\/?$/i);
+  if (m) location.href = '/r/' + m[1].toLowerCase();
+};
+$('code').onkeydown = (e) => e.key === 'Enter' && $('join').click();
+</script>
+</body>
+</html>
