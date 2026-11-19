@@ -207,6 +207,7 @@ const rawReader = (mid) => async (o, l) => {
   return new Blob(out);
 };
 let copiedBytes = 0;
+let prepInfo = null, peerPrep = null;   // a movie being read before it can be announced (index at the end of the file)
 function markAvailable() {
   if (!quick || !quick.direct || !room.movie || room.movie.id !== quick.mid) return;
   quick.ends.forEach((e, k) => {
@@ -234,12 +235,14 @@ async function importSource(file, mid, resume) {
       copiedBytes = copied;
       idb.put(`S:${mid}`, { copied, size: file.size }).catch(() => {});
       markAvailable();
+      if (!plan) { prepInfo = { name: file.name.replace(/\.[^.]+$/, ''), pct: Math.round((copied / file.size) * 100) }; send({ t: 'prep', ...prepInfo }); }
       const pct = copied / file.size, speed = copied / 1048576 / Math.max(0.5, (Date.now() - t0) / 1000);
       upUI(`${plan ? 'بنحفظ الفيلم' : 'بنقرا الفيلم'}: ${Math.round(pct * 100)}%`, pct,
         `${speed.toFixed(0)} MB/s` + (plan ? ' — تقدر تشغّل عادي والباقي بيتحفظ.' : ' — الفيلم ده فهرسه في آخره، فلازم نقراه للآخر الأول.'));
     },
     onMoov: async (moovBytes) => {
       plan = await adoptPlan(mid, moovBytes);
+      prepInfo = null; send({ t: 'prep', done: true });
       if (!plan) return;
       idb.put(`M:${mid}`, new Blob([moovBytes])).catch(() => {});
       if (!/^(avc1|avc3)$/.test(plan.videoCodec) && !confirm(`الفيديو بصيغة ${plan.videoCodec.toUpperCase()} — ممكن مايشتغلش على كل الأجهزة (الأفضل H.264). نكمل؟`)) throw new Error('اتلغى');
@@ -250,6 +253,7 @@ async function importSource(file, mid, resume) {
       markAvailable();
     },
   });
+  if (prepInfo) { prepInfo = null; send({ t: 'prep', done: true }); }
   if (!plan) { quick = null; return false; }
   return true;
 }
@@ -446,12 +450,14 @@ function onCtl(m, c) {
       commit(() => {});
     } else syncClock();
     pumpWants();
+    if (prepInfo) send({ t: 'prep', ...prepInfo });
     return;
   }
   if (m.t === 'room') { applyRoom(m.room); pumpWants(); return; }
   if (m.t === 'act') { if (isMaster) handleAct(m); return; }
   if (m.t === 'buf') { peerBuffering = !!m.on; checkWaiting(); return; }
   if (m.t === 'prog') { peerProgress = m; return; }
+  if (m.t === 'prep') { peerPrep = m.done ? null : m; return; }
   if (m.t === 'want') { if (!serveQueue.includes(m.i)) serveQueue.push(m.i); serve(); return; }
 }
 
@@ -650,6 +656,12 @@ function tick() {
     } else pill('netPill', have.size >= n ? '✅ الفيلم كله عندك' : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
   } else pill('netPill', '');
 
+  if (!room.movie && (prepInfo || (peerPrep && connected))) {
+    vids.forEach((v) => v.pause()); setBuffering(false);
+    const pp = prepInfo || peerPrep;
+    return message(prepInfo ? `بنجهّز «${pp.name}»` : `${peerName || 'التاني'} بيجهّز «${pp.name}»`,
+      `${pp.pct}% — الفيلم ده فهرسه في آخر الملف، فلازم يتقري للآخر الأول. أول ما يخلص هيظهر عند الاتنين.`, '<div class="spin"></div>');
+  }
   if (!room.movie) {
     vids.forEach((v) => v.pause()); setBuffering(false);
     return message('الغرفة جاهزة 🎬', connected ? 'اختاروا فيلم من جهاز أي حد فيكم.' : 'ابعت رابط الغرفة للي هيتفرج معاك، واختار الفيلم.', '', { text: '🎬 اختار فيلم', fn: () => $('pickBtn').click() });
