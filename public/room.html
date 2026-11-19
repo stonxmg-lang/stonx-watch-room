@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120c">
+<meta name="build" content="b20261120d">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -63,8 +63,16 @@
            background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:14px; display:none; max-height:75vh; overflow:auto; }
   .panel.show { display:block; }
   .panel h3 { font-size:14px; margin-bottom:10px; color:#cfd3da; }
-  .mem { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .mem:last-child { border:0; } .mem span { flex:1; } .mem .x { background:none; border:0; color:var(--red); cursor:pointer; font-size:14px; }
+  .mem { display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); }
+  .mem:last-child { border:0; }
+  .mem i { width:9px; height:9px; border-radius:50%; background:var(--acc); box-shadow:0 0 8px var(--acc); flex:none; }
+  .mem.off i { background:#4a505b; box-shadow:none; }
+  .mem div { display:flex; flex-direction:column; min-width:0; }
+  .mem b { font-size:14px; font-weight:800; } .mem.off b { color:#9aa0aa; }
+  .mem small { font-size:12px; color:var(--mut); line-height:1.5; }
+  .sound { position:fixed; z-index:13; left:50%; top:50%; transform:translate(-50%,-50%); display:none; font:inherit; font-weight:800; font-size:16px;
+           padding:13px 24px; border-radius:99px; border:0; background:var(--acc); color:#04140a; box-shadow:0 6px 30px #000a; cursor:pointer; }
+  .sound.show { display:block; }
   .menu button { display:block; width:100%; text-align:start; background:#1a1e26; border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:8px; cursor:pointer; font-weight:600; }
   .menu button.dan { color:var(--red); }
   .menu .hint { font-size:12px; color:var(--mut); line-height:1.7; margin-top:4px; }
@@ -115,7 +123,9 @@
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
   /* portrait phones: let the top pills wrap onto a second line and squeeze the bottom row, so nothing falls off screen */
   @media (max-width:600px) {
-    .top { flex-wrap:wrap; row-gap:6px; padding-inline:8px; }
+    .top { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-inline:8px; }
+    .top::-webkit-scrollbar { display:none; }
+    .top .pill { flex:none; }
     .top .title { display:none; }
     .pill { font-size:11px; padding:5px 8px; gap:4px; }
     .row { gap:2px; }
@@ -137,14 +147,18 @@
   <span class="pill live off" id="live"><i></i><span id="liveTxt">مستني</span></span>
   <span class="pill" id="netPill" style="display:none;cursor:default"></span>
   <button class="pill" id="prepPill" style="display:none"></button>
-  <button class="pill" id="updPill" style="display:none;background:#38e07b33;color:#7ff0ae">✨ تحديث جديد</button>
-  <span class="pill" id="peerPill" style="cursor:default">⏳</span>
-  <button class="pill" id="shareBtn">🔗 شارك</button>
-  <button class="pill" id="menuBtn">⚙️</button>
+  <button class="pill" id="memBtn">👥 الأعضاء</button>
+  <button class="pill" id="menuBtn">⚙️ الإعدادات</button>
 </div>
 
+<div class="panel" id="members">
+  <h3>الأعضاء</h3>
+  <div id="memList"></div>
+</div>
+<button class="sound" id="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
 <div class="panel menu" id="menu">
-  <h3>الفيلم</h3>
+  <button id="shareBtn">🔗 شارك رابط الغرفة</button>
+  <h3 style="margin-top:6px">الفيلم</h3>
   <button id="pickBtn">🎬 اختار فيلم من جهازي</button>
   <button class="dan" id="deleteBtn">🗑️ امسح الفيلم</button>
   <p class="hint">الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم وصل للكل».</p>
@@ -389,8 +403,8 @@ function act(action, extra = {}) {  // anyone: request a change
 function handleAct(a) {
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
-    if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; }
-    if (a.action === 'pause') { r.status = 'paused'; r.pausedAt = pos; r.auto = !!a.auto; }
+    if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; delete r.upd; }
+    if (a.action === 'pause') { r.status = 'paused'; r.pausedAt = pos; r.auto = !!a.auto; if (!a.auto) delete r.upd; }
     if (a.action === 'seek') { const to = Math.min(Math.max(+a.to || 0, 0), T); if (r.status === 'playing') { r.base = to; r.startedAt = now() + 800; } else { r.status = 'paused'; r.pausedAt = to; } }
     if (a.action === 'movie') { r.movie = a.movie; r.status = 'paused'; r.pausedAt = 0; r.auto = false; }
     if (a.action === 'delete') { r.movie = null; r.status = 'stopped'; r.pausedAt = 0; }
@@ -398,11 +412,14 @@ function handleAct(a) {
 }
 // both pause while anyone is still loading, and carry on together once ready
 function checkWaiting() {
-  if (!isMaster) return;
+  if (!isMaster || updating) return;
   const someone = myBuffering || live().some((p) => p.buf);
   if (someone && room.status === 'playing') handleAct({ action: 'pause', auto: true });
-  else if (!someone && room.status === 'paused' && room.auto) handleAct({ action: 'play', auto: true });
+  else if (!someone && room.status === 'paused' && room.auto && !updWait()) handleAct({ action: 'play', auto: true });
 }
+// right after a site update everybody reloads; carry on only once the same people are back (or after 25s)
+const updWait = () => !!room.upd && live().length + 1 < room.upd.n && Math.abs(now() - room.upd.at) < 25000;
+setInterval(checkWaiting, 1500);
 
 // ---------------- connection: up to 5 people, everyone linked to everyone ----------------
 // The first browser to grab the room's name is the "master": it owns the play/pause state and tells newcomers
@@ -437,19 +454,41 @@ setInterval(async () => {
       if (!pair) st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
       if (!pair) continue; any = true;
       const loc = st.get(pair.localCandidateId), rem = st.get(pair.remoteCandidateId);
-      if ((loc && loc.candidateType === 'relay') || (rem && rem.candidateType === 'relay')) relay = true;
+      const r = (loc && loc.candidateType === 'relay') || (rem && rem.candidateType === 'relay');
+      if (r) relay = true;
+      p.link = r ? ' 🔁' : ' ⚡';
     } catch (e) {}
   }
   linkType = !any ? '' : relay ? ' · 🔁' : ' · ⚡';
   setPeerPill();
 }, 5000);
-function setPeerPill() {
-  const ps = live();
-  if (!ps.length) { $('peerPill').textContent = '⏳ مستني حد يدخل'; return; }
-  const names = ps.map((p) => p.name || 'ضيف');
-  const txt = ps.length === 1 ? `🟢 ${names[0]} معاك` : `🟢 ${names.join('، ')}`;
-  $('peerPill').textContent = (txt.length > 26 ? `👥 ${ps.length + 1} في الغرفة` : txt) + linkType;
+function setPeerPill() { $('memBtn').textContent = `👥 الأعضاء ${live().length + 1}`; renderMembers(); }
+// everyone who has been in this room, so the list can also show who stepped out and since when
+const MKEY = 'wr2_members_' + roomId;
+let known = (() => { try { return JSON.parse(store.get(MKEY)) || {}; } catch (e) { return {}; } })();   // cid -> { name, seen }
+function remember(p) { if (!p.cid) return; known[p.cid] = { name: p.name || 'ضيف', seen: Date.now() }; store.set(MKEY, JSON.stringify(known)); }
+function ago(t) {
+  const m = Math.floor((Date.now() - t) / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  return m < 1 ? 'من شوية' : m < 2 ? 'من دقيقة' : m < 11 ? `من ${m} دقايق` : m < 60 ? `من ${m} دقيقة`
+    : h < 2 ? 'من ساعة' : h < 11 ? `من ${h} ساعات` : h < 24 ? `من ${h} ساعة` : d < 2 ? 'من يوم' : `من ${d} أيام`;
 }
+function renderMembers() {
+  if (!$('members').classList.contains('show')) return;
+  const n = parts().length, mid = room.movie && room.movie.id;
+  const what = (c, got) => !room.movie ? '' : c === room.movie.src ? 'صاحب الفيلم 🎬' : got >= n ? 'الفيلم كله عنده ✅' : `وصله ${Math.round((got / n) * 100)}% من الفيلم`;
+  const row = (name, state, on) => {
+    const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
+    r.className = 'mem' + (on ? '' : ' off'); b.textContent = name; sm.textContent = state; t.append(b, sm); r.append(i, t); return r;
+  };
+  const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]), list = [];
+  list.push(row((store.get('wr_name') || 'ضيف') + ' (انت)', ['موجود في الغرفة', what(cid, have.size)].filter(Boolean).join(' · '), true));
+  for (const p of on) list.push(row(p.name || 'ضيف', ['موجود في الغرفة' + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), true));
+  Object.entries(known).filter(([c]) => !here.has(c)).sort((a, b) => b[1].seen - a[1].seen).slice(0, 8)
+    .forEach(([, k]) => list.push(row(k.name, `مش موجود دلوقتي · خرج ${ago(k.seen)}`, false)));
+  $('memList').replaceChildren(...list);
+}
+$('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); $('members').classList.toggle('show'); renderMembers(); };
+setInterval(renderMembers, 2000);
 function wireCtl(c) {
   const p = P(c.peer);
   if (p.ctl && p.ctl !== c) { const old = p.ctl; p.ctl = null; try { old.close(); } catch (e) {} }
@@ -479,7 +518,7 @@ function dropPeer(p) {
   peers.delete(p.id);
   try { p.dat && p.dat.close(); } catch (e) {}
   for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i);
-  if (p.ready) toast(`${p.name || 'ضيف'} خرج من الغرفة`);
+  if (p.ready) { toast(`${p.name || 'ضيف'} خرج من الغرفة`); remember(p); }
   refreshConn(); roster(); checkWaiting(); pumpWants();
   if (!isMaster && p.id === MASTER_ID) setTimeout(connect, 1500);   // the master left: someone takes over
 }
@@ -495,7 +534,7 @@ async function connect() {
     p.on('open', () => resolve(p));
     p.on('error', (e) => { if (e.type === 'unavailable-id') { p.destroy(); resolve(null); } else if (!p.open) { p.destroy(); resolve('err'); } });
   });
-  if (asMaster === 'err') { $('peerPill').textContent = '⚠️ مشكلة اتصال، بنحاول تاني…'; return setTimeout(connect, 4000); }
+  if (asMaster === 'err') { $('memBtn').textContent = '⚠️ بنحاول نتصل…'; return setTimeout(connect, 4000); }
   if (asMaster) {
     peer = asMaster; isMaster = true;
     if (offset && room.startedAt) { room.startedAt -= offset; saveRoom(); }  // re-express times on my own clock
@@ -532,10 +571,10 @@ setInterval(() => { if (!isMaster && masterPeer() && masterPeer().ready) syncClo
 // which parts each of us holds, sent as compact ranges ("0-41,44,50-52")
 const encodeSet = (s) => { const a = [...s].sort((x, y) => x - y), out = []; for (let i = 0; i < a.length; i++) { let j = i; while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++; out.push(j > i ? a[i] + '-' + a[j] : '' + a[i]); i = j; } return out.join(','); };
 const decodeSet = (t) => { const s = new Set(); String(t || '').split(',').forEach((r) => { if (!r) return; const [a, b] = r.split('-').map(Number); for (let i = a; i <= (isNaN(b) ? a : b) && i - a < 100000; i++) s.add(i); }); return s; };
-const haveMsg = () => ({ t: 'have', mid: room.movie ? room.movie.id : null, have: encodeSet(have), pend: [...inflight.keys()] });
+const haveMsg = () => ({ t: 'have', mid: room.movie ? room.movie.id : null, have: encodeSet(have), pend: [...inflight.keys()], busy: preparing });
 let haveSig = '', haveAt = 0;
 setInterval(() => {
-  const m = haveMsg(), sig = m.mid + '|' + m.have + '|' + m.pend.join(',');
+  const m = haveMsg(), sig = m.mid + '|' + m.have + '|' + m.pend.join(',') + '|' + m.busy;
   if (sig !== haveSig || Date.now() - haveAt > 10000) { haveSig = sig; haveAt = Date.now(); send(m); }
 }, 1000);
 
@@ -552,6 +591,7 @@ function onCtl(m, p, c) {
     if (isMaster && live().filter((x) => x !== p).length >= MAX - 1) { c.send({ t: 'full' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
     const fresh = !p.ready; p.cid = m.cid; p.name = String(m.name || 'ضيف').slice(0, 24); p.ready = true; refreshConn();
     if (fresh) toast(`🟢 ${p.name} معاك في الغرفة`);
+    remember(p);
     if (isMaster) {
       // a freshly started master adopts a guest's memory of the room if it is newer
       if (m.room && m.room.v > room.v) { const r = { ...m.room }; if (r.status === 'playing') { r.status = 'paused'; r.pausedAt = Math.max(0, +m.pos || 0); r.auto = false; } applyRoom(r); }
@@ -569,8 +609,9 @@ function onCtl(m, p, c) {
   if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { applyRoom(m.room); pumpWants(); } return; }
   if (m.t === 'act') { if (isMaster) handleAct(m); return; }
   if (m.t === 'bye') { dropPeer(p); return; }
+  if (m.t === 'update') { onUpdateMsg(m); return; }
   if (m.t === 'buf') { p.buf = !!m.on; checkWaiting(); return; }
-  if (m.t === 'have') { p.mid = m.mid; p.have = decodeSet(m.have); p.pend = new Set(Array.isArray(m.pend) ? m.pend : []); pumpWants(); return; }
+  if (m.t === 'have') { p.busy = !!m.busy; p.mid = m.mid; p.have = decodeSet(m.have); p.pend = new Set(Array.isArray(m.pend) ? m.pend : []); pumpWants(); return; }
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
@@ -854,7 +895,7 @@ function tick() {
     if (Math.abs(diff) > 1.0) { el.currentTime = target; el.playbackRate = 1; }
     else if (Math.abs(diff) > 0.1) el.playbackRate = 1 + Math.max(-0.07, Math.min(0.07, diff * 0.5));
     else el.playbackRate = 1;
-    if (el.paused) el.play().catch(() => { if (!muted) { muted = true; applyVolume(); toast('🔇 دوس على الصوت علشان تسمع'); } el.play().catch(() => {}); });
+    if (el.paused) el.play().catch(() => { if (!muted) { muted = true; applyVolume(); $('soundBtn').classList.add('show'); } el.play().catch(() => {}); });
   } else {
     if (!el.paused) el.pause();
     if (Math.abs(diff) > 0.12) el.currentTime = target;
@@ -868,7 +909,8 @@ $('back10').onclick = () => act('seek', { to: position() - 10 });
 $('fwd10').onclick = () => act('seek', { to: position() + 10 });
 $('seek').addEventListener('input', () => { dragging = true; });
 $('seek').addEventListener('change', (e) => { dragging = false; act('seek', { to: +e.target.value }); });
-$('muteBtn').onclick = () => { muted = !muted; if (!muted && volume === 0) { volume = 1; $('vol').value = 1; } applyVolume(); };
+$('soundBtn').onclick = (e) => { e.stopPropagation(); muted = false; applyVolume(); vids[active].play().catch(() => {}); $('soundBtn').classList.remove('show'); };
+$('muteBtn').onclick = () => { $('soundBtn').classList.remove('show'); muted = !muted; if (!muted && volume === 0) { volume = 1; $('vol').value = 1; } applyVolume(); };
 $('vol').oninput = (e) => { volume = +e.target.value; muted = volume === 0; applyVolume(); };
 $('fsBtn').onclick = () => {
   const d = document.documentElement, v = vids[active];
@@ -876,8 +918,8 @@ $('fsBtn').onclick = () => {
   else if (d.requestFullscreen) d.requestFullscreen().catch(() => v.webkitEnterFullscreen && v.webkitEnterFullscreen());
   else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
 };
-$('menuBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.toggle('show'); };
-document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) $('menu').classList.remove('show'); });
+$('menuBtn').onclick = (e) => { e.stopPropagation(); $('members').classList.remove('show'); $('menu').classList.toggle('show'); };
+document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) { $('menu').classList.remove('show'); $('members').classList.remove('show'); } });
 $('pickBtn').onclick = () => {
   if (preparing) return toast('في فيلم بيتجهز بالفعل');
   if (room.movie && !confirm('ده هيغيّر الفيلم الحالي عند الكل. نكمل؟')) return;
@@ -889,6 +931,7 @@ $('deleteBtn').onclick = async () => {
   act('delete'); $('menu').classList.remove('show');
 };
 $('shareBtn').onclick = async () => {
+  $('menu').classList.remove('show');
   const url = location.origin + '/r/' + roomId;
   try { if (navigator.share) await navigator.share({ title: 'تعالى نتفرج سوا 🎬', url }); else { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } }
   catch (e) { try { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } catch (_) { prompt('انسخ الرابط:', url); } }
@@ -995,12 +1038,13 @@ $('chatbar').onsubmit = (e) => {
 document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar')) { $('tray').classList.remove('show'); setEditing(false); $('chatbar').classList.remove('show'); } });
 
 // ---------------- self-update ----------------
-// Each published version of this page carries its own build id (the <meta name="build"> up top). Every minute,
-// and whenever the app comes back to the screen, we peek at the live page's id. If it differs, ✨ shows up top and
-// the page reloads by itself at the first quiet moment (movie paused or not started) and walks straight back into
-// the room — the movie, the place in it and the parts already received are all kept in this browser.
+// Each published version of this page carries its own build id (the <meta name="build"> up top). Every minute, and
+// whenever the app comes back to the screen, we peek at the live page's id. When it changed, the room updates as one:
+// the master pauses the movie, tells everyone to reload, and once the same people are back it carries on playing by
+// itself from the same second. The movie, the place in it and the parts already received are kept in each browser.
+// (Someone still reading a movie in from their phone is never reloaded; the update waits until they're done.)
 const myBuild = (document.querySelector('meta[name=build]') || {}).content || '';
-let newBuild = null, updateReady = false;
+let newBuild = null, updating = false, askedAt = 0;
 async function liveBuild() {
   try {
     const r = await fetch('/room?check=' + Date.now(), { cache: 'no-store', headers: { Range: 'bytes=0-2047' } });
@@ -1008,20 +1052,45 @@ async function liveBuild() {
     return m ? m[1] : null;
   } catch (e) { return null; }
 }
-function applyUpdate() {
+function reloadNow() {
   try { if (joined) sessionStorage.setItem('wr_autojoin', '1'); } catch (_) {}
   const u = new URL(location.href); u.searchParams.set('v', newBuild || Date.now().toString(36));
   location.replace(u.toString());   // a fresh address, so no cached copy of the old page can come back
 }
-async function checkUpdate() {
-  const v = await liveBuild();
-  if (!v || !myBuild || v === myBuild || updateReady) return;
-  newBuild = v; updateReady = true; $('updPill').style.display = ''; toast('✨ في تحديث جديد — هينزل أول ما الفيلم يقف');
+function goUpdate(delay) {
+  if (updating || preparing) return;
+  updating = true; toast('✨ بنحدّث الموقع… ثواني وهنكمّل');
+  setTimeout(reloadNow, delay);
 }
-$('updPill').onclick = (e) => { e.stopPropagation(); applyUpdate(); };
-// a quiet moment: nothing playing, nothing being prepared, nobody typing or editing the emoji row
-const quiet = () => room.status !== 'playing' && !preparing && !document.querySelector('.chatbar.show, .tray.editing');
-setInterval(() => { if (updateReady && quiet()) applyUpdate(); }, 3000);
+function startUpdate() {
+  if (updating || preparing || !newBuild) return;
+  if (!joined) return reloadNow();
+  const m = masterPeer();
+  if (!isMaster && m && m.ready) {
+    // ask the master to update the whole room; if it can't (an older page), update on my own at a quiet moment
+    if (Date.now() - askedAt > 15000) { askedAt = Date.now(); sendTo(m, { t: 'update', build: newBuild }); }
+    if (Date.now() - askedAt > 10000 && room.status !== 'playing') goUpdate(0);
+    return;
+  }
+  if (live().some((p) => p.busy)) return;   // someone is still reading a movie in; try again shortly
+  if (room.status === 'playing' || (room.auto && room.status === 'paused')) {
+    handleAct({ action: 'pause', auto: true });
+    commit((r) => { r.upd = { n: live().length + 1, at: now() }; });
+  }
+  send({ t: 'update', build: newBuild });
+  goUpdate(1200);
+}
+function onUpdateMsg(m) {
+  if (!m.build || m.build === myBuild) return;
+  newBuild = newBuild || m.build;
+  if (isMaster) startUpdate(); else goUpdate(300);
+}
+async function checkUpdate() {
+  if (updating) return;
+  const v = await liveBuild();
+  if (v && myBuild && v !== myBuild) { newBuild = v; startUpdate(); }
+}
+setInterval(() => { if (newBuild && !updating) startUpdate(); }, 5000);
 setInterval(checkUpdate, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
 setTimeout(checkUpdate, 4000);
