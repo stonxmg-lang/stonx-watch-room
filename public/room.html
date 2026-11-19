@@ -110,6 +110,7 @@
   <span class="pill live off" id="live"><i></i><span id="liveTxt">مستني</span></span>
   <span class="pill" id="netPill" style="display:none;cursor:default"></span>
   <button class="pill" id="prepPill" style="display:none"></button>
+  <button class="pill" id="updPill" style="display:none;background:#38e07b33;color:#7ff0ae">✨ تحديث جديد</button>
   <span class="pill" id="peerPill" style="cursor:default">⏳</span>
   <button class="pill" id="shareBtn">🔗 شارك</button>
   <button class="pill" id="menuBtn">⚙️</button>
@@ -812,6 +813,39 @@ $('chatbar').onsubmit = (e) => {
 };
 document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar')) { $('tray').classList.remove('show'); $('chatbar').classList.remove('show'); } });
 
+// ---------------- self-update ----------------
+// Every couple of minutes, check whether a newer version of this page was published. If so, show ✨ up top;
+// when nothing is playing (or on tap) reload and walk straight back into the room — the movie, the place in it
+// and the parts already received are all kept in this browser, so nothing is lost.
+let myVersion = null, updateReady = false;
+async function pageVersion() {
+  const url = '/room?check=' + Date.now();
+  try {
+    const h = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    const tag = h.headers.get('etag') || h.headers.get('last-modified');
+    if (tag) return tag;
+    const t = await (await fetch(url, { cache: 'no-store' })).text();
+    let x = 0; for (let i = 0; i < t.length; i++) x = (x * 31 + t.charCodeAt(i)) | 0;
+    return t.length + ':' + x;
+  } catch (e) { return null; }
+}
+function applyUpdate() {
+  try { sessionStorage.setItem('wr_autojoin', '1'); } catch (_) {}
+  location.reload();
+}
+async function checkUpdate() {
+  const v = await pageVersion(); if (!v) return;
+  if (!myVersion) { myVersion = v; return; }
+  if (v !== myVersion && !updateReady) { updateReady = true; $('updPill').style.display = ''; toast('✨ في تحديث جديد للموقع'); }
+}
+$('updPill').onclick = (e) => { e.stopPropagation(); applyUpdate(); };
+setInterval(() => {
+  checkUpdate();
+  // apply on its own only at a quiet moment: nothing playing, nothing being prepared, nobody typing
+  if (updateReady && joined && room.status !== 'playing' && !preparing && !document.querySelector('.chatbar.show')) applyUpdate();
+}, 120000);
+setTimeout(checkUpdate, 5000);
+
 // ---------------- join ----------------
 $('nameIn').value = store.get('wr_name') || '';
 $('title').textContent = $('gateTitle').textContent = room.title;
@@ -829,10 +863,11 @@ async function join() {
 }
 $('joinBtn').onclick = join;
 $('nameIn').onkeydown = (e) => e.key === 'Enter' && join();
+try { if (sessionStorage.getItem('wr_autojoin') && store.get('wr_name')) { sessionStorage.removeItem('wr_autojoin'); setTimeout(join, 0); } } catch (_) {}
 if (!roomId) showFatal('رابط غلط', 'افتح رابط الغرفة اللي اتبعتلك.');
 setInterval(tick, 300);
 setPeerPill();
-window.__wr = { get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
+window.__wr = { checkUpdate, get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
 </script>
 </body>
 </html>
