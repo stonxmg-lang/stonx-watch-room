@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120d">
+<meta name="build" content="b20261120e">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -120,6 +120,19 @@
   .chatbar button svg { width:24px; height:24px; fill:currentColor; transform:scaleX(-1); }
   .chatbar button:active { filter:brightness(.9); }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
+  /* @mentions: picked people show as small chips in the chat bar; a message with chips goes to them only */
+  .chatbar .chips { display:flex; gap:6px; flex:0 1 auto; max-width:45%; overflow-x:auto; scrollbar-width:none; align-items:center; }
+  .chatbar .chips:empty { display:none; }
+  .chip { flex:none; display:flex; align-items:center; gap:4px; background:#ffd16626; color:#ffd166; font-weight:800; font-size:13px;
+          padding:6px 10px; border-radius:99px; white-space:nowrap; cursor:pointer; }
+  .chip::after { content:'✕'; font-size:11px; opacity:.7; }
+  .mention { position:fixed; z-index:17; inset-inline:10px; bottom:max(156px,calc(env(safe-area-inset-bottom) + 150px)); max-width:360px; display:none;
+             background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:6px; max-height:40vh; overflow:auto; }
+  .mention.show { display:block; }
+  .mention div { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; font-weight:800; cursor:pointer; }
+  .mention div:active, .mention div.hi { background:#ffffff14; }
+  .mention div i { width:8px; height:8px; border-radius:50%; background:var(--acc); flex:none; }
+  .chatlog .at { color:#ffd166; font-weight:800; margin-inline-end:5px; }
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
   /* portrait phones: let the top pills wrap onto a second line and squeeze the bottom row, so nothing falls off screen */
   @media (max-width:600px) {
@@ -200,7 +213,8 @@
 <div class="fx" id="fx"></div>
 <div class="chatlog" id="chatlog"></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
-<form class="chatbar" id="chatbar" autocomplete="off"><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
+<div class="mention" id="mention"></div>
+<form class="chatbar" id="chatbar" autocomplete="off"><div class="chips" id="chips"></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
 
 <script src="/vendor/peerjs.min.js"></script>
 <script type="module">
@@ -615,7 +629,7 @@ function onCtl(m, p, c) {
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name); return; }
+  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -964,11 +978,13 @@ function flyEmoji(e) {
   $('fx').appendChild(s);
   setTimeout(() => s.remove(), 3000);
 }
-function addChat(text, mine, who) {
+function addChat(text, mine, who, priv) {
   const d = document.createElement('div'), n = document.createElement('span');
   d.className = mine ? 'me' : 'peer';
   n.className = 'who'; n.textContent = (mine ? 'انت' : who || 'ضيف') + ':';
-  d.append(n, document.createTextNode(text));
+  d.append(n);
+  if (priv) { const a = document.createElement('span'); a.className = 'at'; a.textContent = '@'; d.append(a); }   // a private message, just for the people mentioned
+  d.append(document.createTextNode(text));
   const log = $('chatlog'); log.appendChild(d);
   while (log.children.length > 5) log.firstChild.remove();
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
@@ -1033,9 +1049,56 @@ $('chatBtn').onclick = (e) => {
 $('chatbar').onsubmit = (e) => {
   e.preventDefault();
   const t = $('chatIn').value.trim().slice(0, 120); if (!t) return;
-  addChat(t, true); send({ t: 'chat', text: t }); $('chatIn').value = '';
+  if (picked.size) {
+    const to = live().filter((p) => picked.has(p.cid));
+    if (!to.length) return toast('اللي اخترتهم مش موجودين دلوقتي');
+    to.forEach((p) => sendTo(p, { t: 'chat', text: t, to: true }));
+    addChat(t, true, '', true);
+  } else { addChat(t, true); send({ t: 'chat', text: t }); }
+  $('chatIn').value = ''; picked.clear(); drawChips(); hideMention();
 };
-document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar')) { $('tray').classList.remove('show'); setEditing(false); $('chatbar').classList.remove('show'); } });
+// ---- @mentions: type @ to pick people; the message then goes only to them (with an @ before it, no names)
+const picked = new Map();   // cid -> name
+let atFrom = -1, atList = [], atHi = 0;
+function drawChips() {
+  $('chips').replaceChildren(...[...picked].map(([c, name]) => {
+    const ch = document.createElement('span'); ch.className = 'chip'; ch.textContent = '@' + name;
+    ch.onpointerdown = (e) => e.preventDefault();
+    ch.onclick = (e) => { e.stopPropagation(); picked.delete(c); drawChips(); $('chatIn').focus(); };
+    return ch;
+  }));
+}
+function hideMention() { atFrom = -1; $('mention').classList.remove('show'); }
+function pickMention(p) {
+  const el = $('chatIn'), v = el.value, end = el.selectionStart ?? v.length;
+  el.value = v.slice(0, atFrom) + v.slice(end); el.setSelectionRange(atFrom, atFrom);
+  picked.set(p.cid, p.name || 'ضيف'); drawChips(); hideMention(); el.focus();
+}
+function showMention() {
+  const el = $('chatIn'), v = el.value, caret = el.selectionStart ?? v.length, at = v.lastIndexOf('@', caret - 1);
+  if (at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return hideMention();
+  const q = v.slice(at + 1, caret).trim().toLowerCase();
+  atList = live().filter((p) => !picked.has(p.cid) && (p.name || 'ضيف').toLowerCase().includes(q));
+  if (!atList.length) return hideMention();
+  atFrom = at; atHi = Math.min(atHi, atList.length - 1);
+  $('mention').replaceChildren(...atList.map((p, k) => {
+    const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('span');
+    t.textContent = p.name || 'ضيف'; r.append(i, t); if (k === atHi) r.className = 'hi';
+    r.onpointerdown = (e) => { e.preventDefault(); pickMention(p); };   // keep the keyboard open
+    return r;
+  }));
+  $('mention').classList.add('show');
+}
+$('chatIn').addEventListener('input', showMention);
+$('chatIn').addEventListener('click', showMention);
+$('chatIn').addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && !$('chatIn').value && picked.size) { picked.delete([...picked.keys()].pop()); drawChips(); return; }
+  if (atFrom < 0) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); atHi = (atHi + (e.key === 'ArrowDown' ? 1 : atList.length - 1)) % atList.length; showMention(); }
+  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickMention(atList[atHi]); }
+  else if (e.key === 'Escape') hideMention();
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar, .mention')) { hideMention(); $('tray').classList.remove('show'); setEditing(false); $('chatbar').classList.remove('show'); } });
 
 // ---------------- self-update ----------------
 // Each published version of this page carries its own build id (the <meta name="build"> up top). Every minute, and
