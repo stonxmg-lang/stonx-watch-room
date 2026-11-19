@@ -179,6 +179,12 @@ const idb = (() => {
   };
 })();
 const partKey = (mid, i) => `${mid}:${String(i).padStart(5, '0')}`;
+const mem = new Map(); let storageLow = false;
+async function savePart(mid, i, rec) {
+  try { await idb.put(partKey(mid, i), rec); }
+  catch (e) { console.warn('idb put failed', e); mem.set(partKey(mid, i), rec); if (!storageLow) { storageLow = true; toast('⚠️ مساحة الموبايل قليلة — هنكمّل من الذاكرة'); } }
+}
+const loadPart = (mid, i) => (mem.has(partKey(mid, i)) ? Promise.resolve(mem.get(partKey(mid, i))) : idb.get(partKey(mid, i)));
 
 // ---------------- state ----------------
 let peer = null, ctl = null, dat = null, isMaster = false, connected = false, peerName = '', peerCid = '';
@@ -196,7 +202,7 @@ function ensurePart(i) {
   const mid = quick.mid;
   const job = quick.build(i).then(async (blob) => {
     const rec = { blob, trim: 0 };
-    await idb.put(partKey(mid, i), rec);
+    await savePart(mid, i, rec);
     if (room.movie && room.movie.id === mid) { have.add(i); (waiters.get(i) || []).forEach((r) => r(rec)); waiters.delete(i); }
   }).catch((e) => console.warn('ensurePart', e)).finally(() => building.delete(i));
   building.set(i, job);
@@ -227,7 +233,7 @@ function applyRoom(next, from) {
   $('title').textContent = $('gateTitle').textContent = room.title; document.title = 'STONX · ' + room.title;
   if (movieChanged) {
     for (const [k, u] of urls) if (typeof k === 'number') URL.revokeObjectURL(u);
-    urls.clear(); trims.clear(); loaded = [null, null]; inflight.clear(); peerProgress = null;
+    urls.clear(); trims.clear(); loaded = [null, null]; inflight.clear(); peerProgress = null; mem.clear();
     vids.forEach((v) => { v.removeAttribute('src'); v.load(); });
     const keep = room.movie ? room.movie.id + ':' : '\u0000';
     idb.keys().then((ks) => Promise.all(ks.filter((k) => !String(k).startsWith(keep)).map((k) => idb.del(k)))).catch(() => {}).then(loadHave).then(pumpWants);
@@ -267,8 +273,20 @@ function peerOpts() {
   return o;
 }
 function send(m) { if (ctl && ctl.open) ctl.send(m); }
+let linkType = '';
+setInterval(async () => {
+  try {
+    const pc = dat && dat.peerConnection; if (!pc || !connected) { linkType = ''; return; }
+    const st = await pc.getStats(); let pair = null;
+    st.forEach((r) => { if (r.type === 'transport' && r.selectedCandidatePairId) pair = st.get(r.selectedCandidatePairId); });
+    if (!pair) st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') pair = r; });
+    const loc = pair && st.get(pair.localCandidateId), rem = pair && st.get(pair.remoteCandidateId);
+    linkType = !pair ? '' : (loc && loc.candidateType === 'relay') || (rem && rem.candidateType === 'relay') ? ' · 🔁' : ' · ⚡';
+    setPeerPill();
+  } catch (e) {}
+}, 5000);
 function setPeerPill() {
-  $('peerPill').textContent = connected ? `🟢 ${peerName || 'التاني'} معاك` : '⏳ مستني التاني';
+  $('peerPill').textContent = connected ? `🟢 ${peerName || 'التاني'} معاك${linkType}` : '⏳ مستني التاني';
 }
 function wireCtl(c) {
   const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || 'ضيف', room, pos: position() });
@@ -355,14 +373,14 @@ function onCtl(m, c) {
   if (m.t === 'act') { if (isMaster) handleAct(m); return; }
   if (m.t === 'buf') { peerBuffering = !!m.on; checkWaiting(); return; }
   if (m.t === 'prog') { peerProgress = m; return; }
-  if (m.t === 'want') { serveQueue.push(m.i); serve(); return; }
+  if (m.t === 'want') { if (!serveQueue.includes(m.i)) serveQueue.push(m.i); serve(); return; }
 }
 
 // ---------------- moving the movie ----------------
 const CHUNK = 64 * 1024, HIGH = 8 * 1024 * 1024;
 const serveQueue = []; let serving = false, peerProgress = null;
 function getPart(i) {
-  if (have.has(i)) return idb.get(partKey(room.movie.id, i));
+  if (have.has(i)) return loadPart(room.movie.id, i);
   ensurePart(i);
   return new Promise((r) => { if (!waiters.has(i)) waiters.set(i, []); waiters.get(i).push(r); });
 }
@@ -381,7 +399,7 @@ async function serve() {
           await new Promise((r) => { dc.bufferedAmountLowThreshold = HIGH / 2; const t = setTimeout(r, 1000); dc.addEventListener('bufferedamountlow', () => { clearTimeout(t); r(); }, { once: true }); });
         }
         if (dc.readyState !== 'open') break;
-        dc.send(await rec.blob.slice(o, o + CHUNK).arrayBuffer());
+        dc.send(await rec.blob.slice(o, o + CHUNK).arrayBuffer()); txBytes += CHUNK;
       }
       if (dc.readyState === 'open') dc.send(JSON.stringify({ t: 'e', i }));
     }
@@ -390,15 +408,17 @@ async function serve() {
 }
 // receiver
 let rx = null; const inflight = new Set(); let rate = 0, rxBytes = 0, rxT0 = Date.now();
+let txBytes = 0, txRate = 0, lastRxAt = Date.now();
 function onData(d) {
   if (typeof d === 'string') {
     const m = JSON.parse(d);
+    lastRxAt = Date.now();
     if (m.t === 'h') { rx = { ...m, bufs: [] }; return; }
     if (m.t === 'e' && rx && rx.i === m.i) {
       const r = rx; rx = null;
       if (!room.movie || r.mid !== room.movie.id) return;
       const blob = new Blob(r.bufs, { type: 'video/mp4' });
-      idb.put(partKey(r.mid, r.i), { blob, trim: r.trim }).then(() => {
+      savePart(r.mid, r.i, { blob, trim: r.trim }).then(() => {
         have.add(r.i); inflight.delete(r.i);
         send({ t: 'prog', n: have.size, of: parts().length });
         pumpWants();
@@ -406,9 +426,16 @@ function onData(d) {
     }
     return;
   }
+  lastRxAt = Date.now();
   if (rx) { rx.bufs.push(d); rxBytes += d.byteLength; }
 }
-setInterval(() => { const t = Date.now(); rate = rate * 0.6 + (rxBytes / ((t - rxT0) / 1000)) * 0.4; rxBytes = 0; rxT0 = t; }, 1000);
+setInterval(() => { const t = Date.now(), dt = (t - rxT0) / 1000; rate = rate * 0.6 + (rxBytes / dt) * 0.4; txRate = txRate * 0.6 + (txBytes / dt) * 0.4; rxBytes = 0; txBytes = 0; rxT0 = t; }, 1000);
+// watchdog: if we're waiting for parts but nothing has arrived for a while, a request or the line got lost —
+// forget what's in flight and ask again (the sender ignores duplicates)
+setInterval(() => {
+  if (!inflight.size || iAmSource() || !connected) { lastRxAt = Date.now(); return; }
+  if (Date.now() - lastRxAt > 15000) { console.warn('transfer stalled, re-requesting', [...inflight]); inflight.clear(); rx = null; lastRxAt = Date.now(); pumpWants(); }
+}, 3000);
 // ask for the part we need soonest, keeping two in flight so the line never idles
 function pumpWants() {
   if (!room.movie || iAmSource() || !connected) return;
@@ -448,7 +475,7 @@ async function pickMovie(file, resume) {
     })) {
       if (!have.has(p.index)) {
         const rec = { blob: p.blob, trim: p.trim };
-        await idb.put(partKey(mid, p.index), rec);
+        await savePart(mid, p.index, rec);
         have.add(p.index);
         (waiters.get(p.index) || []).forEach((r) => r(rec)); waiters.delete(p.index);
       }
@@ -481,7 +508,7 @@ function partUrl(i) {
   if (!urls.has('L' + i)) {
     urls.set('L' + i, true);
     const mid = room.movie.id;
-    idb.get(partKey(mid, i)).then((rec) => { urls.delete('L' + i); if (rec && room.movie && room.movie.id === mid) { urls.set(i, URL.createObjectURL(rec.blob)); trims.set(i, rec.trim || 0); } });
+    loadPart(mid, i).then((rec) => { urls.delete('L' + i); if (rec && room.movie && room.movie.id === mid) { urls.set(i, URL.createObjectURL(rec.blob)); trims.set(i, rec.trim || 0); } });
   }
   return null;
 }
@@ -527,7 +554,7 @@ function tick() {
     const n = parts().length;
     if (iAmSource()) {
       const got = peerProgress ? peerProgress.n : 0;
-      pill('netPill', connected ? (got >= n ? '✅ الفيلم كله وصل' : `📤 وصل للتاني ${Math.round((got / n) * 100)}%`) : '');
+      pill('netPill', connected ? (got >= n ? '✅ الفيلم كله وصل' : `📤 وصل للتاني ${Math.round((got / n) * 100)}% · ${(txRate / 1048576).toFixed(1)}MB/s`) : '');
     } else pill('netPill', have.size >= n ? '✅ الفيلم كله عندك' : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
   } else pill('netPill', '');
 
@@ -619,11 +646,14 @@ navigator.storage && navigator.storage.persist && navigator.storage.persist().ca
 // ---------------- join ----------------
 $('nameIn').value = store.get('wr_name') || '';
 $('title').textContent = $('gateTitle').textContent = room.title;
+let wakeLockSentinel = null;
+async function keepAwake() { try { if (!wakeLockSentinel || wakeLockSentinel.released) wakeLockSentinel = await navigator.wakeLock.request('screen'); } catch (_) {} }
 async function join() {
   const name = $('nameIn').value.trim() || 'ضيف';
   store.set('wr_name', name);
   vids.forEach((v) => { v.muted = true; v.play().catch(() => {}); v.pause(); });  // unlock playback inside the tap
   joined = true; muted = false; show(0);
+  keepAwake(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
   $('gate').style.display = 'none';
   await loadHave();
   connect();
