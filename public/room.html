@@ -144,7 +144,7 @@
   <h3>الفيلم</h3>
   <button id="pickBtn">🎬 اختار فيلم من جهازي</button>
   <button class="dan" id="deleteBtn">🗑️ امسح الفيلم</button>
-  <p class="hint">الفيلم بيروح من جهازك للتاني مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم كله وصل».</p>
+  <p class="hint">الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم وصل للكل».</p>
 </div>
 <input type="file" id="file" accept="video/*,.mkv" hidden>
 
@@ -175,7 +175,7 @@
 <div class="layer gate" id="gate">
   <span class="brand">STONX · WATCH TOGETHER</span>
   <h1 id="gateTitle">غرفة مشاهدة</h1>
-  <p id="gateSub">الفيلم بيروح من جهاز لجهاز مباشرة، وانتوا الاتنين بتشوفوا نفس اللقطة في نفس الثانية.</p>
+  <p id="gateSub">الفيلم بيروح من جهاز لجهاز مباشرة، وكلكم بتشوفوا نفس اللقطة في نفس الثانية.</p>
   <input id="nameIn" placeholder="اسمك" maxlength="24">
   <button class="btn" id="joinBtn">ادخل الغرفة ▶</button>
 </div>
@@ -810,7 +810,7 @@ function tick() {
     vids.forEach((v) => v.pause()); setBuffering(false);
     const pp = prepInfo || peerPrep;
     return message(prepInfo ? `بنجهّز «${pp.name}»` : `${pp.who || 'حد'} بيجهّز «${pp.name}»`,
-      `${pp.pct}% — الفيلم ده فهرسه في آخر الملف، فلازم يتقري للآخر الأول. أول ما يخلص هيظهر عند الاتنين.`, '<div class="spin"></div>');
+      `${pp.pct}% — الفيلم ده فهرسه في آخر الملف، فلازم يتقري للآخر الأول. أول ما يخلص هيظهر عند الكل.`, '<div class="spin"></div>');
   }
   if (!room.movie) {
     vids.forEach((v) => v.pause()); setBuffering(false);
@@ -826,7 +826,7 @@ function tick() {
   }
   if (!iAmSource() && !connected && !have.has(currentIndex())) {
     vids.forEach((v) => v.pause()); setBuffering(false);
-    return message('مستنيين التاني…', 'الفيلم بيتبث من جهاز اللي اختاره، ولازم الصفحة عنده تكون مفتوحة.', '<div class="spin"></div>');
+    return message('مستنيين صاحب الفيلم…', 'الفيلم بيتبث من جهاز اللي اختاره، ولازم الصفحة عنده تكون مفتوحة.', '<div class="spin"></div>');
   }
   const waitStart = playing && now() < room.startedAt;  // short countdown so both start on the same frame
   countdown(waitStart && !room.auto ? (room.startedAt - now()) / 1000 : 0);
@@ -877,7 +877,7 @@ $('menuBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.toggle(
 document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) $('menu').classList.remove('show'); });
 $('pickBtn').onclick = () => {
   if (preparing) return toast('في فيلم بيتجهز بالفعل');
-  if (room.movie && !confirm('ده هيغيّر الفيلم الحالي عند الاتنين. نكمل؟')) return;
+  if (room.movie && !confirm('ده هيغيّر الفيلم الحالي عند الكل. نكمل؟')) return;
   $('menu').classList.remove('show'); delete $('file').dataset.resume; $('file').click();
 };
 $('file').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) pickMovie(f, !!$('file').dataset.resume); };
