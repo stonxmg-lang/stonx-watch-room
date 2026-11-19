@@ -96,6 +96,16 @@
   .chatbar button { font:inherit; font-weight:800; border:0; border-radius:99px; padding:0 18px; background:var(--acc); color:#04140a; cursor:pointer; }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
+  /* portrait phones: let the top pills wrap onto a second line and squeeze the bottom row, so nothing falls off screen */
+  @media (max-width:600px) {
+    .top { flex-wrap:wrap; row-gap:6px; padding-inline:8px; }
+    .top .title { display:none; }
+    .pill { font-size:11px; padding:5px 8px; gap:4px; }
+    .row { gap:2px; }
+    .ib { width:34px; }
+    .ib.big svg { width:26px; height:26px; }
+    .time { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:clip; }
+  }
   .toast { position:fixed; z-index:30; top:max(70px,calc(env(safe-area-inset-top) + 60px)); left:50%; transform:translateX(-50%); background:#222733f2; padding:9px 18px; border-radius:99px; font-size:14px; display:none; white-space:nowrap; }
 </style>
 </head>
