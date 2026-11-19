@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120e">
+<meta name="build" content="b20261120f">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -121,7 +121,9 @@
   .chatbar button:active { filter:brightness(.9); }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
   /* @mentions: picked people show as small chips in the chat bar; a message with chips goes to them only */
-  .chatbar .chips { display:flex; gap:6px; flex:0 1 auto; max-width:45%; overflow-x:auto; scrollbar-width:none; align-items:center; }
+  .chatbar .chips { position:absolute; bottom:calc(100% + 8px); inset-inline:0; display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; align-items:center; }
+  body:has(.chips:not(:empty)) .mention { bottom:max(196px,calc(env(safe-area-inset-bottom) + 190px)); }
+  body:has(.chatbar.show .chips:not(:empty)) .chatlog { bottom:max(200px,calc(env(safe-area-inset-bottom) + 194px)); }
   .chatbar .chips:empty { display:none; }
   .chip { flex:none; display:flex; align-items:center; gap:4px; background:#ffd16626; color:#ffd166; font-weight:800; font-size:13px;
           padding:6px 10px; border-radius:99px; white-space:nowrap; cursor:pointer; }
