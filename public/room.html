@@ -184,7 +184,17 @@ async function savePart(mid, i, rec) {
   try { await idb.put(partKey(mid, i), rec); }
   catch (e) { console.warn('idb put failed', e); mem.set(partKey(mid, i), rec); if (!storageLow) { storageLow = true; toast('⚠️ مساحة الموبايل قليلة — هنكمّل من الذاكرة'); } }
 }
-const loadPart = (mid, i) => (mem.has(partKey(mid, i)) ? Promise.resolve(mem.get(partKey(mid, i))) : idb.get(partKey(mid, i)));
+// the device that picked an MP4 never stores a second copy: any part is cut from the original file on demand
+const built = new Map();
+function fromFile(i) {
+  if (!built.has(i)) {
+    built.set(i, quick.build(i).then((blob) => ({ blob, trim: 0 })).catch((e) => { built.delete(i); throw e; }));
+    while (built.size > 6) built.delete(built.keys().next().value);
+  }
+  return built.get(i);
+}
+const loadPart = (mid, i) => (quick && quick.mid === mid ? fromFile(i)
+  : mem.has(partKey(mid, i)) ? Promise.resolve(mem.get(partKey(mid, i))) : idb.get(partKey(mid, i)));
 
 // ---------------- state ----------------
 let peer = null, ctl = null, dat = null, isMaster = false, connected = false, peerName = '', peerCid = '';
@@ -198,6 +208,7 @@ let quick = null;                   // fast cutter of the picked file: builds an
 const building = new Map();
 function ensurePart(i) {
   if (have.has(i) || !quick || !room.movie || quick.mid !== room.movie.id || i < 0 || i >= parts().length) return null;
+  if (quick.direct) { have.add(i); return null; }
   if (building.has(i)) return building.get(i);
   const mid = quick.mid;
   const job = quick.build(i).then(async (blob) => {
@@ -222,6 +233,7 @@ const currentIndex = () => { const l = locate(Math.max(0, position())); return l
 async function loadHave() {
   have.clear();
   if (!room.movie) return;
+  if (quick && quick.direct && quick.mid === room.movie.id) { parts().forEach((_, i) => have.add(i)); return; }
   const prefix = room.movie.id + ':';
   for (const k of await idb.keys()) if (String(k).startsWith(prefix)) have.add(+String(k).slice(prefix.length));
 }
@@ -473,6 +485,14 @@ async function pickMovie(file, resume) {
         upOpen = false; $('up').classList.remove('show');  // get out of the way; 🛠️ up top opens it again
       },
     })) {
+      if (quick) {
+        // plain MP4: nothing to prepare or store — every part is available right away
+        quick.direct = true; built.clear();
+        for (let i = 0; i < planned; i++) have.add(i);
+        for (const [i, rs] of waiters) { const rec = await loadPart(mid, i); rs.forEach((r) => r(rec)); }
+        waiters.clear();
+        break;
+      }
       if (!have.has(p.index)) {
         const rec = { blob: p.blob, trim: p.trim };
         await savePart(mid, p.index, rec);
