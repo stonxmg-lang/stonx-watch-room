@@ -37,8 +37,8 @@ async function run(args) {
  * Async generator. Yields { blob, index, trim, duration, total } for each part, in order.
  * onStage(text, ratio) reports progress for the UI.
  */
-export async function* splitMovie(file, { onStage = () => {}, confirmCodec = async () => true, targetBytes = TARGET_BYTES, firstBytes = 0, onPlan = null, onFast = null, isDone = null } = {}) {
-  if (onPlan) {
+export async function* splitMovie(file, { onStage = () => {}, confirmCodec = async () => true, targetBytes = TARGET_BYTES, firstBytes = 0, onPlan = null, onFast = null, isDone = null, noFast = false } = {}) {
+  if (onPlan && !noFast) {
     // fast path: plain MP4/MOV → cut in pure JS, no ffmpeg at all
     onStage('بنقرا الفيلم…', null);
     let fast = null;

@@ -193,6 +193,66 @@ function fromFile(i) {
   }
   return built.get(i);
 }
+// plain MP4s are copied ONCE, front to back, into browser storage as raw 8MB chunks; parts are cut from there
+const RAW = 8 * 1024 * 1024;
+const rawKey = (mid, i) => `R:${mid}:${String(i).padStart(5, '0')}`;
+async function rawChunk(mid, i) {
+  const k = rawKey(mid, i);
+  if (mem.has(k)) return mem.get(k);
+  const b = await idb.get(k); if (!b) throw new Error('missing chunk ' + i); return b;
+}
+const rawReader = (mid) => async (o, l) => {
+  const out = []; let x = o; const e = o + l;
+  while (x < e) { const ci = Math.floor(x / RAW), b = await rawChunk(mid, ci), s = x - ci * RAW, en = Math.min(e - ci * RAW, b.size); out.push(b.slice(s, en)); x = ci * RAW + en; }
+  return new Blob(out);
+};
+let copiedBytes = 0;
+function markAvailable() {
+  if (!quick || !quick.direct || !room.movie || room.movie.id !== quick.mid) return;
+  quick.ends.forEach((e, k) => {
+    if (have.has(k) || e > copiedBytes) return;
+    have.add(k);
+    const ws = waiters.get(k);
+    if (ws) { waiters.delete(k); loadPart(quick.mid, k).then((rec) => ws.forEach((r) => r(rec))); }
+  });
+}
+async function adoptPlan(mid, moovBytes) {
+  const cut = await import('/mp4cut.js');
+  const plan = cut.planFromMoov(moovBytes, rawReader(mid), { targetBytes: 12 * 1024 * 1024, firstBytes: 3 * 1024 * 1024 });
+  if (!plan) return null;
+  quick = { mid, build: plan.build, direct: true, ends: plan.ranges.map((r) => r.end) }; built.clear();
+  return plan;
+}
+async function importSource(file, mid, resume) {
+  const cut = await import('/mp4cut.js');
+  copiedBytes = 0; quick = null; let plan = null; const t0 = Date.now();
+  await cut.importMp4(file, {
+    chunkBytes: RAW,
+    saveChunk: async (i, blob, copied) => {
+      const k = rawKey(mid, i);
+      try { await idb.put(k, blob); } catch (e) { mem.set(k, blob); if (!storageLow) { storageLow = true; toast('⚠️ مساحة الموبايل قليلة — هنكمّل من الذاكرة'); } }
+      copiedBytes = copied;
+      idb.put(`S:${mid}`, { copied, size: file.size }).catch(() => {});
+      markAvailable();
+      const pct = copied / file.size, speed = copied / 1048576 / Math.max(0.5, (Date.now() - t0) / 1000);
+      upUI(`${plan ? 'بنحفظ الفيلم' : 'بنقرا الفيلم'}: ${Math.round(pct * 100)}%`, pct,
+        `${speed.toFixed(0)} MB/s` + (plan ? ' — تقدر تشغّل عادي والباقي بيتحفظ.' : ' — الفيلم ده فهرسه في آخره، فلازم نقراه للآخر الأول.'));
+    },
+    onMoov: async (moovBytes) => {
+      plan = await adoptPlan(mid, moovBytes);
+      if (!plan) return;
+      idb.put(`M:${mid}`, new Blob([moovBytes])).catch(() => {});
+      if (!/^(avc1|avc3)$/.test(plan.videoCodec) && !confirm(`الفيديو بصيغة ${plan.videoCodec.toUpperCase()} — ممكن مايشتغلش على كل الأجهزة (الأفضل H.264). نكمل؟`)) throw new Error('اتلغى');
+      if (resume) { if (plan.ranges.length !== parts().length) throw new Error('ده مش نفس الملف'); }
+      else act('movie', { movie: { id: mid, name: file.name.replace(/\.[^.]+$/, ''), src: cid, parts: plan.ranges.map((x, i) => ({ i, duration: x.duration })) } });
+      toast('الفيلم جاهز 🎉 تقدر تشغّل');
+      upOpen = false; $('up').classList.remove('show');
+      markAvailable();
+    },
+  });
+  if (!plan) { quick = null; return false; }
+  return true;
+}
 const loadPart = (mid, i) => (quick && quick.mid === mid ? fromFile(i)
   : mem.has(partKey(mid, i)) ? Promise.resolve(mem.get(partKey(mid, i))) : idb.get(partKey(mid, i)));
 
@@ -208,7 +268,7 @@ let quick = null;                   // fast cutter of the picked file: builds an
 const building = new Map();
 function ensurePart(i) {
   if (have.has(i) || !quick || !room.movie || quick.mid !== room.movie.id || i < 0 || i >= parts().length) return null;
-  if (quick.direct) { have.add(i); return null; }
+  if (quick.direct) return null;   // arrives as the copy moves past it
   if (building.has(i)) return building.get(i);
   const mid = quick.mid;
   const job = quick.build(i).then(async (blob) => {
@@ -233,7 +293,14 @@ const currentIndex = () => { const l = locate(Math.max(0, position())); return l
 async function loadHave() {
   have.clear();
   if (!room.movie) return;
-  if (quick && quick.direct && quick.mid === room.movie.id) { parts().forEach((_, i) => have.add(i)); return; }
+  if (quick && quick.direct && quick.mid === room.movie.id) { markAvailable(); return; }
+  if (room.movie.src === cid && !quick) {
+    // I picked this movie before a refresh: the copy in storage still works without the file
+    try {
+      const mv = await idb.get(`M:${room.movie.id}`), meta = await idb.get(`S:${room.movie.id}`);
+      if (mv && meta && await adoptPlan(room.movie.id, new Uint8Array(await mv.arrayBuffer()))) { copiedBytes = meta.copied; markAvailable(); return; }
+    } catch (e) { console.warn('restore', e); }
+  }
   const prefix = room.movie.id + ':';
   for (const k of await idb.keys()) if (String(k).startsWith(prefix)) have.add(+String(k).slice(prefix.length));
 }
@@ -247,8 +314,8 @@ function applyRoom(next, from) {
     for (const [k, u] of urls) if (typeof k === 'number') URL.revokeObjectURL(u);
     urls.clear(); trims.clear(); loaded = [null, null]; inflight.clear(); peerProgress = null; mem.clear();
     vids.forEach((v) => { v.removeAttribute('src'); v.load(); });
-    const keep = room.movie ? room.movie.id + ':' : '\u0000';
-    idb.keys().then((ks) => Promise.all(ks.filter((k) => !String(k).startsWith(keep)).map((k) => idb.del(k)))).catch(() => {}).then(loadHave).then(pumpWants);
+    const keep = room.movie ? room.movie.id : '\u0000';
+    idb.keys().then((ks) => Promise.all(ks.filter((k) => !String(k).includes(keep)).map((k) => idb.del(k)))).catch(() => {}).then(loadHave).then(pumpWants);
   }
 }
 function commit(mut) {          // master only: change state and broadcast
@@ -471,7 +538,12 @@ async function pickMovie(file, resume) {
     if (!resume) { await idb.del(IDBKeyRange.bound('', '\uffff')); have.clear(); }
     let planned = 0;
     quick = null;
+    if (/\.(mp4|m4v|mov)$/i.test(file.name) || /^video\/(mp4|quicktime)$/.test(file.type)) {
+      if (await importSource(file, mid, resume)) { setTimeout(upHide, 1500); return; }
+      upUI('بنجهّز الفيلم…', null, 'الملف ده محتاج تحويل، هياخد وقت أطول.');
+    }
     for await (const p of splitMovie(file, {
+      noFast: true,
       isDone: (k) => have.has(k),
       onFast: (build) => { quick = { mid, build }; },
       targetBytes: 12 * 1024 * 1024, firstBytes: 3 * 1024 * 1024,

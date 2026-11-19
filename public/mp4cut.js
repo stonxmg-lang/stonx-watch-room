@@ -169,14 +169,17 @@ function trakBox(T, a, b, id, mvTs, chunkOff, mediaTime) {
   return { box: box('trak', ...parts), movDur };
 }
 
-function slices(file, T, a, b) {
-  const out = []; let bytes = 0;
+// byte runs of samples [a,b), fetched through read(offset, length) -> Promise<Blob>
+async function slices(read, T, a, b) {
+  const runs = []; let bytes = 0;
   let s = T.off[a], e = s + T.size[a];
   for (let i = a + 1; i < b; i++) {
     const o = T.off[i];
-    if (o === e) e += T.size[i]; else { out.push(file.slice(s, e)); bytes += e - s; s = o; e = o + T.size[i]; }
+    if (o === e) e += T.size[i]; else { runs.push([s, e]); bytes += e - s; s = o; e = o + T.size[i]; }
   }
-  out.push(file.slice(s, e)); bytes += e - s;
+  runs.push([s, e]); bytes += e - s;
+  const out = [];
+  for (const [x, y] of runs) out.push(await read(x, y - x));
   return { out, bytes };
 }
 
@@ -184,11 +187,20 @@ function slices(file, T, a, b) {
  * Returns null if this file can't take the fast path (then the caller falls back to ffmpeg).
  * Otherwise { videoCodec, ranges:[{duration}], build(k) -> Promise<Blob> }.
  */
-export async function prepare(file, { firstBytes, targetBytes }) {
+export async function prepare(file, opts) {
   const top = await scanTop(file);
   if (!top || top.size > 300 * 1024 * 1024) return null;
   const buf = await file.slice(top.o, top.o + top.size).arrayBuffer();
-  const dv = new DataView(buf);
+  return planFromMoov(buf, async (o, l) => file.slice(o, o + l), opts);
+}
+
+/**
+ * Plan the parts from the movie's index (the moov box bytes) alone. Media bytes are fetched later through
+ * read(offset, length) -> Promise<Blob>, so they can come from the picked file or from a copy in browser storage.
+ * Each range also says up to which byte of the original file it needs (end).
+ */
+export function planFromMoov(buf, read, { firstBytes, targetBytes }) {
+  const dv = new DataView(buf instanceof ArrayBuffer ? buf : buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
   const moov = [...kids(dv, 0, buf.byteLength)][0];
   if (!moov || moov.t !== 'moov' || kid(dv, moov, 'mvex')) return null; // fragmented → fallback
   const mvhd = kid(dv, moov, 'mvhd');
@@ -233,14 +245,18 @@ export async function prepare(file, { firstBytes, targetBytes }) {
       ar.push([s, j]);
     }
   }
-  const ranges = vr.map(([a, b]) => ({ duration: (V.dts[b - 1] + V.dur[b - 1] - V.dts[a]) / V.ts }));
+  const lastByte = (T, a, b) => { let m = 0; for (let i = a; i < b; i++) m = Math.max(m, T.off[i] + T.size[i]); return m; };
+  const ranges = vr.map(([a, b], k) => ({
+    duration: (V.dts[b - 1] + V.dur[b - 1] - V.dts[a]) / V.ts,
+    end: Math.max(lastByte(V, a, b), A && ar[k][1] > ar[k][0] ? lastByte(A, ar[k][0], ar[k][1]) : 0),
+  }));
 
   const FTYP = box('ftyp', new TextEncoder().encode('isom'), u32s(0x200), new TextEncoder().encode('isomiso2avc1mp41'));
   async function build(k) {
     const [va, vb] = vr[k];
     const hasA = A && ar[k][1] > ar[k][0];
-    const vS = slices(file, V, va, vb);
-    const aS = hasA ? slices(file, A, ar[k][0], ar[k][1]) : { out: [], bytes: 0 };
+    const vS = await slices(read, V, va, vb);
+    const aS = hasA ? await slices(read, A, ar[k][0], ar[k][1]) : { out: [], bytes: 0 };
     const make = (vOff, aOff) => {
       const tv = trakBox(V, va, vb, 1, mvTs, vOff, V.mediaTime);
       const ta = hasA ? trakBox(A, ar[k][0], ar[k][1], 2, mvTs, aOff, k === 0 ? A.mediaTime : 0) : null;
@@ -256,4 +272,65 @@ export async function prepare(file, { firstBytes, targetBytes }) {
     return new Blob([await lazy.arrayBuffer()], { type: 'video/mp4' });
   }
   return { videoCodec: V.codec, ranges, build };
+}
+
+/**
+ * Read the picked file ONCE, front to back (the only fast way on phones — jumping to an offset deep inside a
+ * picked file can cost a read of everything before it), handing out fixed-size chunks to store, and spotting the
+ * movie's index (moov) on the way. onMoov(Uint8Array) fires as soon as the index has streamed past.
+ */
+export async function importMp4(file, { chunkBytes, saveChunk, onMoov }) {
+  const reader = file.stream().getReader();
+  let pos = 0, boxStart = 0, hdr = [], moov = null, moovAt = 0, moovFill = 0, seenMoov = false, bad = false;
+  let pend = [], pendLen = 0, idx = 0;
+  const flush = async (final) => {
+    while (pendLen >= chunkBytes || (final && pendLen > 0)) {
+      const take = Math.min(chunkBytes, pendLen), pieces = []; let got = 0;
+      while (got < take) {
+        const a = pend[0], need = take - got;
+        if (a.length <= need) { pieces.push(a); got += a.length; pend.shift(); }
+        else { pieces.push(a.subarray(0, need)); pend[0] = a.subarray(need); got += need; }
+      }
+      pendLen -= take;
+      await saveChunk(idx++, new Blob(pieces), (idx) * chunkBytes >= file.size ? file.size : idx * chunkBytes);
+    }
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const cs = pos, ce = pos + value.length;
+    // walk the top-level boxes as the bytes go by
+    let c = cs;
+    while (c < ce && !bad) {
+      if (moov) {
+        const n = Math.min(moov.length - moovFill, ce - c);
+        moov.set(value.subarray(c - cs, c - cs + n), moovFill); moovFill += n; c += n;
+        if (moovFill === moov.length) { const m = moov; moov = null; seenMoov = true; await onMoov(m); }
+        continue;
+      }
+      if (c < boxStart) { c = Math.min(boxStart, ce); continue; }
+      const want = Math.min(16, file.size - boxStart) - hdr.length;
+      const n = Math.min(want, ce - c);
+      for (let i = 0; i < n; i++) hdr.push(value[c - cs + i]);
+      c += n;
+      if (hdr.length < Math.min(16, file.size - boxStart) && hdr.length < 8) continue;
+      const h = new DataView(Uint8Array.from(hdr).buffer);
+      let size = h.getUint32(0); const t = T4(h, 4);
+      if (size === 1) { if (hdr.length < 16) continue; size = U64(h, 8); } else if (size === 0) size = file.size - boxStart;
+      if (size < 8) { bad = true; break; }
+      if (t === 'moov' && !seenMoov && size < 300 * 1024 * 1024) {
+        moov = new Uint8Array(size); moovAt = boxStart; moovFill = 0;
+        const already = Math.min(c - boxStart, size);
+        moov.set(Uint8Array.from(hdr).subarray(0, already), 0); moovFill = already;
+        c = boxStart + already;
+        if (moovFill === size) { const m = moov; moov = null; seenMoov = true; await onMoov(m); }
+      }
+      boxStart += size; hdr = [];
+      if (c > boxStart) { if (boxStart < cs) { bad = true; break; } c = boxStart; }   // tiny box: rescan from its end
+    }
+    pend.push(value); pendLen += value.length; pos = ce;
+    await flush(false);
+  }
+  await flush(true);
+  return { seenMoov, moovAt };
 }
