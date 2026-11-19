@@ -84,10 +84,20 @@
              display:flex; flex-direction:column; align-items:flex-start; gap:6px; pointer-events:none; }
   .chatlog div { background:#0000008a; backdrop-filter:blur(6px); padding:6px 12px; border-radius:14px; font-size:14px; line-height:1.55;
                  max-width:100%; word-break:break-word; animation:cin .25s ease-out; transition:opacity .7s; }
-  .chatlog b { color:var(--acc); margin-inline-end:6px; }
+  .chatlog .me { color:#ff6b7a; } .chatlog .peer { color:#5ff09a; }
   @keyframes cin { from { opacity:0; transform:translateY(8px); } }
   .tray, .chatbar { position:fixed; z-index:16; bottom:max(100px,calc(env(safe-area-inset-bottom) + 94px)); display:none; }
-  .tray { left:50%; transform:translateX(-50%); gap:2px; background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:99px; padding:4px 8px; }
+  .tray { left:50%; transform:translateX(-50%); gap:2px; background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:99px;
+          padding:8px 10px 4px; max-width:calc(100vw - 20px); overflow-x:auto; scrollbar-width:none; }
+  .tray::-webkit-scrollbar { display:none; }
+  .tray button { position:relative; flex:none; }
+  .tray .del { position:absolute; top:-5px; right:-3px; width:17px; height:17px; border-radius:50%; background:var(--red); color:#fff;
+               font:800 14px/16px system-ui,sans-serif; text-align:center; display:none; box-shadow:0 1px 4px #0008; }
+  .tray.editing .del { display:block; }
+  .tray .edit { font-size:19px; opacity:.85; border-inline-start:1px solid var(--line); margin-inline-start:4px; padding-inline:9px; }
+  .tray.editing .edit { font-size:26px; font-weight:800; color:var(--acc); opacity:1; }
+  .tray .edit input { position:absolute; inset:0; width:100%; height:100%; opacity:.01; border:0; background:none; color:transparent; font-size:16px; display:none; }
+  .tray.editing .edit input { display:block; }
   .tray.show, .chatbar.show { display:flex; }
   .tray button { font-size:26px; background:none; border:0; padding:4px 5px; cursor:pointer; line-height:1; }
   .tray button:active { transform:scale(1.3); }
@@ -496,8 +506,8 @@ function onCtl(m, c) {
   if (m.t === 'buf') { peerBuffering = !!m.on; checkWaiting(); return; }
   if (m.t === 'prog') { peerProgress = m; return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : m; return; }
-  if (m.t === 'react') { if (REACTS.includes(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(peerName || 'التاني', m.text.slice(0, 120)); return; }
+  if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
+  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false); return; }
   if (m.t === 'want') { if (!serveQueue.includes(m.i)) serveQueue.push(m.i); serve(); return; }
 }
 
@@ -788,7 +798,15 @@ let idleT; const wake = () => { document.body.classList.remove('idle'); clearTim
 navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {});
 
 // ---------------- reactions + quick chat ----------------
-const REACTS = ['❤️', '😂', '😍', '😮', '😢', '🔥', '👏', '👍'];
+// the reaction tray is editable: ✏️ turns into + and puts a red − on each emoji; + opens the keyboard and only emojis get added
+const isEmoji = (x) => typeof x === 'string' && x.length <= 16
+  && /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|\u200d|\ufe0f|\u20e3|[#*0-9])+$/u.test(x)
+  && /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(x);
+const graphemes = (x) => (typeof Intl !== 'undefined' && Intl.Segmenter
+  ? [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(x)].map((g) => g.segment) : Array.from(x));
+const DEFAULT_REACTS = ['❤️', '😂', '😍', '😮', '😢', '🔥', '👏', '👍'];
+let reacts = (() => { try { const a = JSON.parse(store.get('wr_reacts')); if (Array.isArray(a)) return a.filter(isEmoji).slice(0, 30); } catch (e) {} return DEFAULT_REACTS.slice(); })();
+const saveReacts = () => store.set('wr_reacts', JSON.stringify(reacts));
 function flyEmoji(e) {
   const s = document.createElement('span');
   s.textContent = e;
@@ -799,19 +817,42 @@ function flyEmoji(e) {
   $('fx').appendChild(s);
   setTimeout(() => s.remove(), 3000);
 }
-function addChat(name, text) {
-  const d = document.createElement('div'), b = document.createElement('b');
-  b.textContent = name; d.append(b, document.createTextNode(text));
+function addChat(text, mine) {
+  const d = document.createElement('div');
+  d.className = mine ? 'me' : 'peer'; d.textContent = text;
   const log = $('chatlog'); log.appendChild(d);
   while (log.children.length > 5) log.firstChild.remove();
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
 }
-REACTS.forEach((e) => {
-  const b = document.createElement('button'); b.type = 'button'; b.textContent = e;
-  b.onclick = (ev) => { ev.stopPropagation(); flyEmoji(e); send({ t: 'react', e }); };
-  $('tray').appendChild(b);
-});
-$('reactBtn').onclick = (e) => { e.stopPropagation(); $('chatbar').classList.remove('show'); $('tray').classList.toggle('show'); };
+const editBtn = document.createElement('button'), emojiIn = document.createElement('input');
+editBtn.type = 'button'; editBtn.className = 'edit'; editBtn.setAttribute('aria-label', 'تعديل');
+emojiIn.setAttribute('aria-label', 'ضيف إيموجي'); emojiIn.autocomplete = 'off';
+function setEditing(on) { $('tray').classList.toggle('editing', on); editBtn.firstChild.nodeValue = on ? '+' : '✏️'; if (!on) emojiIn.blur(); }
+function emojiButton(e) {
+  const b = document.createElement('button'), x = document.createElement('span');
+  b.type = 'button'; b.textContent = e; x.className = 'del'; x.textContent = '−'; b.appendChild(x);
+  b.onclick = (ev) => {
+    ev.stopPropagation();
+    if ($('tray').classList.contains('editing')) {           // edit mode: only the red − does something
+      if (ev.target === x) { reacts = reacts.filter((r) => r !== e); saveReacts(); b.remove(); }
+      return;
+    }
+    flyEmoji(e); send({ t: 'react', e });
+  };
+  return b;
+}
+editBtn.append(document.createTextNode('✏️'), emojiIn);
+editBtn.onclick = (ev) => { ev.stopPropagation(); if (!$('tray').classList.contains('editing')) setEditing(true); else emojiIn.focus(); };
+emojiIn.onclick = (ev) => ev.stopPropagation();
+emojiIn.oninput = () => {
+  const add = graphemes(emojiIn.value).filter((g) => isEmoji(g) && !reacts.includes(g));
+  emojiIn.value = '';                                      // plain text is simply dropped
+  for (const g of add) { if (reacts.length >= 30) break; reacts.push(g); $('tray').insertBefore(emojiButton(g), editBtn); }
+  if (add.length) { saveReacts(); editBtn.scrollIntoView({ inline: 'end', block: 'nearest' }); }
+};
+reacts.forEach((e) => $('tray').appendChild(emojiButton(e)));
+$('tray').appendChild(editBtn);
+$('reactBtn').onclick = (e) => { e.stopPropagation(); $('chatbar').classList.remove('show'); setEditing(false); $('tray').classList.toggle('show'); };
 $('chatBtn').onclick = (e) => {
   e.stopPropagation(); $('tray').classList.remove('show');
   const open = $('chatbar').classList.toggle('show'); if (open) $('chatIn').focus();
@@ -819,9 +860,9 @@ $('chatBtn').onclick = (e) => {
 $('chatbar').onsubmit = (e) => {
   e.preventDefault();
   const t = $('chatIn').value.trim().slice(0, 120); if (!t) return;
-  addChat('انت', t); send({ t: 'chat', text: t }); $('chatIn').value = '';
+  addChat(t, true); send({ t: 'chat', text: t }); $('chatIn').value = '';
 };
-document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar')) { $('tray').classList.remove('show'); $('chatbar').classList.remove('show'); } });
+document.addEventListener('click', (e) => { if (!e.target.closest('.tray, .chatbar')) { $('tray').classList.remove('show'); setEditing(false); $('chatbar').classList.remove('show'); } });
 
 // ---------------- self-update ----------------
 // Every couple of minutes, check whether a newer version of this page was published. If so, show ✨ up top;
