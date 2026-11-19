@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120a">
+<meta name="build" content="b20261120b">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -83,9 +83,10 @@
                      70% { opacity:.6; } 100% { transform:translate(var(--dx),-58vh) scale(1); opacity:0; } }
   .chatlog { position:fixed; z-index:12; inset-inline-start:12px; bottom:max(118px,calc(env(safe-area-inset-bottom) + 112px)); width:min(72vw,360px);
              display:flex; flex-direction:column; align-items:flex-start; gap:6px; pointer-events:none; }
-  .chatlog div { background:#0000008a; backdrop-filter:blur(6px); padding:6px 12px; border-radius:14px; font-size:14px; line-height:1.55;
+  .chatlog div { background:#0000008a; backdrop-filter:blur(6px); padding:6px 12px; border-radius:14px; font-size:14.5px; font-weight:700; line-height:1.55;
                  max-width:100%; word-break:break-word; animation:cin .25s ease-out; transition:opacity .7s; }
   .chatlog .me { color:#ff6b7a; } .chatlog .peer { color:#5ff09a; }
+  .chatlog .who { color:#ffd166; font-weight:800; margin-inline-end:5px; }
   @keyframes cin { from { opacity:0; transform:translateY(8px); } }
   .tray, .chatbar { position:fixed; z-index:16; bottom:max(100px,calc(env(safe-area-inset-bottom) + 94px)); display:none; }
   .tray { left:50%; transform:translateX(-50%); gap:2px; background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:99px;
@@ -107,7 +108,9 @@
   .tray button:active { transform:scale(1.3); }
   .chatbar { inset-inline:10px; gap:8px; }
   .chatbar input { flex:1; min-width:0; font:inherit; font-size:16px; background:#0b0d12ee; border:1px solid var(--line); color:var(--fg); border-radius:99px; padding:10px 16px; }
-  .chatbar button { font:inherit; font-weight:800; border:0; border-radius:99px; padding:0 18px; background:var(--acc); color:#04140a; cursor:pointer; }
+  .chatbar button { flex:none; width:46px; height:46px; border:0; border-radius:50%; background:#00a884; color:#fff; cursor:pointer; display:grid; place-items:center; align-self:center; }
+  .chatbar button svg { width:23px; height:23px; fill:currentColor; transform:scaleX(-1); }
+  .chatbar button:active { filter:brightness(.9); }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
   /* portrait phones: let the top pills wrap onto a second line and squeeze the bottom row, so nothing falls off screen */
@@ -183,7 +186,7 @@
 <div class="fx" id="fx"></div>
 <div class="chatlog" id="chatlog"></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
-<form class="chatbar" id="chatbar" autocomplete="off"><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit">إرسال</button></form>
+<form class="chatbar" id="chatbar" autocomplete="off"><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
 
 <script src="/vendor/peerjs.min.js"></script>
 <script type="module">
@@ -571,7 +574,7 @@ function onCtl(m, p, c) {
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false); return; }
+  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -918,9 +921,11 @@ function flyEmoji(e) {
   $('fx').appendChild(s);
   setTimeout(() => s.remove(), 3000);
 }
-function addChat(text, mine) {
-  const d = document.createElement('div');
-  d.className = mine ? 'me' : 'peer'; d.textContent = text;
+function addChat(text, mine, who) {
+  const d = document.createElement('div'), n = document.createElement('span');
+  d.className = mine ? 'me' : 'peer';
+  n.className = 'who'; n.textContent = (mine ? 'انت' : who || 'ضيف') + ':';
+  d.append(n, document.createTextNode(text));
   const log = $('chatlog'); log.appendChild(d);
   while (log.children.length > 5) log.firstChild.remove();
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
