@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120b">
+<meta name="build" content="b20261120c">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -85,8 +85,8 @@
              display:flex; flex-direction:column; align-items:flex-start; gap:6px; pointer-events:none; }
   .chatlog div { background:#0000008a; backdrop-filter:blur(6px); padding:6px 12px; border-radius:14px; font-size:14.5px; font-weight:700; line-height:1.55;
                  max-width:100%; word-break:break-word; animation:cin .25s ease-out; transition:opacity .7s; }
-  .chatlog .me { color:#ff6b7a; } .chatlog .peer { color:#5ff09a; }
-  .chatlog .who { color:#ffd166; font-weight:800; margin-inline-end:5px; }
+  .chatlog div { color:#fff; }
+  .chatlog .who { color:#5ff09a; font-weight:800; margin-inline-end:5px; }
   @keyframes cin { from { opacity:0; transform:translateY(8px); } }
   .tray, .chatbar { position:fixed; z-index:16; bottom:max(100px,calc(env(safe-area-inset-bottom) + 94px)); display:none; }
   .tray { left:50%; transform:translateX(-50%); gap:2px; background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:99px;
@@ -107,9 +107,9 @@
   .tray button { font-size:25px; background:none; border:0; padding:4px 4px; cursor:pointer; line-height:1; }
   .tray button:active { transform:scale(1.3); }
   .chatbar { inset-inline:10px; gap:8px; }
-  .chatbar input { flex:1; min-width:0; font:inherit; font-size:16px; background:#0b0d12ee; border:1px solid var(--line); color:var(--fg); border-radius:99px; padding:10px 16px; }
-  .chatbar button { flex:none; width:46px; height:46px; border:0; border-radius:50%; background:#00a884; color:#fff; cursor:pointer; display:grid; place-items:center; align-self:center; }
-  .chatbar button svg { width:23px; height:23px; fill:currentColor; transform:scaleX(-1); }
+  .chatbar input { flex:1; min-width:0; font:inherit; font-size:16px; background:#0b0d12ee; border:1px solid var(--line); color:var(--fg); border-radius:99px; padding:0 16px; height:48px; }
+  .chatbar button { flex:none; width:48px; height:48px; border:0; border-radius:50%; background:var(--acc); color:#04140a; cursor:pointer; display:grid; place-items:center; align-self:center; }
+  .chatbar button svg { width:24px; height:24px; fill:currentColor; transform:scaleX(-1); }
   .chatbar button:active { filter:brightness(.9); }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
