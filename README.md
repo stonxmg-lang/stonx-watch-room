@@ -1,5 +1,9 @@
 # STONX Watch Room 🎬
 
+<p align="center">
+  <img src="public/icon.png" width="128" height="128" alt="STONX Watch Room Logo" style="border-radius: 28px;">
+</p>
+
 A two-person watch-together room: both people see the same frame at the same second, from anywhere, with no video server in between.
 
 Live: https://stonx-watch-room.vercel.app
