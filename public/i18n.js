@@ -3,6 +3,7 @@
 (function () {
   const D = {
     ar: {
+      shareShort: '🔗 مشاركة', onlyMgr: 'اختيار الفيلم ومسحه لصاحب الغرفة بس', pickMine: 'اختار فيلم من جهازك وهيوصل للكل.', waitPick: 'مستنيين صاحب الغرفة يختار فيلم.',
       noMembers: 'مفيش أعضاء تانيين في الغرفة دلوقتي', hashOwnerOnly: '# دي لصاحب الغرفة 👑 بس',
       onlyOwnerMute: 'دي لصاحب الغرفة بس', mutedYou: '🔇 صاحب الغرفة وقف عندك التفاعل والتعليقات', unmutedYou: '💬 صاحب الغرفة رجّعلك التفاعل والتعليقات',
       mutedX: '🔇 وقفت التفاعل والتعليقات عند {n}', unmutedX: '💬 رجّعت التفاعل والتعليقات لـ{n}', mutedNow: '🔇 التفاعل والتعليقات متوقفين عندك دلوقتي',
@@ -57,6 +58,7 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      shareShort: '🔗 Share', onlyMgr: 'Only the room owner can pick or remove the movie', pickMine: 'Pick a movie from your device and it reaches everyone.', waitPick: 'Waiting for the room owner to pick a movie.',
       noMembers: 'Nobody else is in the room right now', hashOwnerOnly: '# is for the room owner 👑 only',
       onlyOwnerMute: 'Only the room owner can do this', mutedYou: '🔇 The room owner turned off your reactions and comments', unmutedYou: '💬 The room owner turned your reactions and comments back on',
       mutedX: '🔇 Turned off reactions and comments for {n}', unmutedX: '💬 Turned reactions and comments back on for {n}', mutedNow: '🔇 Your reactions and comments are off right now',
@@ -111,6 +113,7 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      shareShort: '🔗 Paylaş', onlyMgr: 'Filmi yalnızca oda sahibi seçebilir veya kaldırabilir', pickMine: 'Cihazından bir film seç, herkese ulaşsın.', waitPick: 'Oda sahibinin film seçmesi bekleniyor.',
       noMembers: 'Şu an odada başka kimse yok', hashOwnerOnly: '# yalnızca oda sahibi 👑 içindir',
       onlyOwnerMute: 'Bunu yalnızca oda sahibi yapabilir', mutedYou: '🔇 Oda sahibi tepki ve yorumlarını kapattı', unmutedYou: '💬 Oda sahibi tepki ve yorumlarını yeniden açtı',
       mutedX: '🔇 {n} için tepki ve yorumlar kapatıldı', unmutedX: '💬 {n} için tepki ve yorumlar yeniden açıldı', mutedNow: '🔇 Tepki ve yorumların şu an kapalı',
@@ -165,6 +168,7 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      shareShort: '🔗 اشتراک', onlyMgr: 'انتخاب و حذف فیلم فقط با صاحب اتاق است', pickMine: 'از دستگاهت یک فیلم انتخاب کن تا به همه برسد.', waitPick: 'منتظر انتخاب فیلم توسط صاحب اتاق هستیم.',
       noMembers: 'الان کس دیگری در اتاق نیست', hashOwnerOnly: '# فقط برای صاحب اتاق 👑 است',
       onlyOwnerMute: 'این کار فقط از صاحب اتاق برمی‌آید', mutedYou: '🔇 صاحب اتاق واکنش‌ها و نظرهایت را بست', unmutedYou: '💬 صاحب اتاق واکنش‌ها و نظرهایت را دوباره باز کرد',
       mutedX: '🔇 واکنش‌ها و نظرهای {n} بسته شد', unmutedX: '💬 واکنش‌ها و نظرهای {n} دوباره باز شد', mutedNow: '🔇 واکنش‌ها و نظرهایت فعلاً بسته است',
@@ -219,6 +223,7 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      shareShort: '🔗 Partager', onlyMgr: 'Seul le propriétaire du salon peut choisir ou retirer le film', pickMine: 'Choisis un film sur ton appareil, il arrivera chez tout le monde.', waitPick: 'En attente du choix du film par le propriétaire.',
       noMembers: 'Personne d’autre dans le salon pour l’instant', hashOwnerOnly: '# est réservé au propriétaire du salon 👑',
       onlyOwnerMute: 'Seul le propriétaire du salon peut faire ça', mutedYou: '🔇 Le propriétaire a coupé tes réactions et commentaires', unmutedYou: '💬 Le propriétaire a réactivé tes réactions et commentaires',
       mutedX: '🔇 Réactions et commentaires coupés pour {n}', unmutedX: '💬 Réactions et commentaires réactivés pour {n}', mutedNow: '🔇 Tes réactions et commentaires sont coupés pour l’instant',
@@ -273,6 +278,7 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      shareShort: '🔗 Поделиться', onlyMgr: 'Выбирать и убирать фильм может только владелец комнаты', pickMine: 'Выбери фильм на своём устройстве, и он дойдёт до всех.', waitPick: 'Ждём, пока владелец комнаты выберет фильм.',
       noMembers: 'Сейчас в комнате больше никого нет', hashOwnerOnly: '# только для владельца комнаты 👑',
       onlyOwnerMute: 'Это может только владелец комнаты', mutedYou: '🔇 Владелец комнаты отключил тебе реакции и комментарии', unmutedYou: '💬 Владелец комнаты снова включил тебе реакции и комментарии',
       mutedX: '🔇 Реакции и комментарии отключены для {n}', unmutedX: '💬 Реакции и комментарии снова включены для {n}', mutedNow: '🔇 Твои реакции и комментарии сейчас отключены',

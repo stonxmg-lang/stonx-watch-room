@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120m">
+<meta name="build" content="b20261120n">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -188,6 +188,7 @@
   <button class="pill" id="prepPill" style="display:none"></button>
   <button class="pill" id="memBtn">👥</button>
   <button class="pill" id="menuBtn">⚙️ <span data-i18n="settings">الإعدادات</span></button>
+  <button class="pill" id="shareTop" style="display:none" data-i18n="shareShort">🔗 مشاركة</button>
 </div>
 
 <div class="panel" id="members">
@@ -278,6 +279,8 @@ const titleOf = () => (room.title && room.title !== 'غرفة مشاهدة' ? ro
 const hadState = !!store.get(SKEY);
 const approved = (c) => !!c && (c === room.owner || (room.ok || []).includes(c));
 const isBoss = () => !!room.owner && (cid === room.owner || cid === room.boss);
+// choosing or removing the movie is for the owner, or whoever stands in while the owner is away
+const canManage = () => !room.owner || isBoss();
 const isMuted = (c) => !!c && (room.mute || []).includes(c);   // the owner switched off this person's reactions and comments
 let waiting = false;   // I asked to come in and nobody has said yes yet
 const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
@@ -460,6 +463,8 @@ function act(action, extra = {}) {  // anyone: request a change
 function handleAct(a, from) {
   const who = from ? from.cid : cid;
   if (['approve', 'reject', 'remove', 'mute', 'unmute'].includes(a.action)) return door(a, who, from);
+  if ((a.action === 'movie' || a.action === 'delete') && room.owner && who !== room.owner && who !== room.boss)
+    return from ? sendTo(from, { t: 'note', key: 'onlyMgr', text: t('onlyMgr') }) : toast(t('onlyMgr'));
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
     if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; delete r.upd; }
@@ -588,6 +593,7 @@ setInterval(async () => {
   setPeerPill();
 }, 5000);
 function setPeerPill() {
+  syncMenu();
   const rq = isBoss() ? (room.req || []).length : 0;
   $('memBtn').textContent = `👥 ${t('members')} ${live().length + 1}` + (rq ? ` · 🔔${rq}` : ''); renderMembers();
 }
@@ -1031,7 +1037,8 @@ function tick() {
   }
   if (!room.movie) {
     vids.forEach((v) => v.pause()); setBuffering(false);
-    return message(t('roomReady'), connected ? t('pickTogether') : t('sendLink'), '', { text: t('pickMovie'), fn: () => $('pickBtn').click() });
+    if (!canManage()) return message(t('roomReady'), t('waitPick'));
+    return message(t('roomReady'), connected ? t('pickMine') : t('sendLink'), '', { text: t('pickMovie'), fn: () => $('pickBtn').click() });
   }
   if (iAmSource() && !have.size && !preparing) {
     vids.forEach((v) => v.pause());
@@ -1091,15 +1098,24 @@ $('fsBtn').onclick = () => {
   else if (d.requestFullscreen) d.requestFullscreen().catch(() => v.webkitEnterFullscreen && v.webkitEnterFullscreen());
   else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
 };
+// regular members get a plain share button up top; the owner (or stand-in) gets the settings menu
+function syncMenu() {
+  const m = canManage();
+  $('menuBtn').style.display = m ? '' : 'none'; $('shareTop').style.display = m ? 'none' : '';
+  if (!m) $('menu').classList.remove('show');
+}
+$('shareTop').onclick = (e) => { e.stopPropagation(); $('shareBtn').click(); };
 $('menuBtn').onclick = (e) => { e.stopPropagation(); $('members').classList.remove('show'); $('menu').classList.toggle('show'); };
 document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) { $('menu').classList.remove('show'); $('members').classList.remove('show'); } });
 $('pickBtn').onclick = () => {
+  if (!canManage()) return toast(t('onlyMgr'));
   if (preparing) return toast(t('busyPrep'));
   if (room.movie && !confirm(t('changeAsk'))) return;
   $('menu').classList.remove('show'); delete $('file').dataset.resume; $('file').click();
 };
 $('file').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) pickMovie(f, !!$('file').dataset.resume); };
 $('deleteBtn').onclick = async () => {
+  if (!canManage()) return toast(t('onlyMgr'));
   if (!room.movie || !confirm(t('delAsk'))) return;
   act('delete'); $('menu').classList.remove('show');
 };
