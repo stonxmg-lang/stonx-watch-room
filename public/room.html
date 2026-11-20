@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120p">
+<meta name="build" content="b20261120q">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -94,6 +94,10 @@
   .sound.show { display:block; }
   .menu button { display:block; width:100%; text-align:start; background:#1a1e26; border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:8px; cursor:pointer; font-weight:600; }
   .menu button.dan { color:var(--red); }
+  .menu button.tog { display:flex; align-items:center; gap:10px; } .menu button.tog span { flex:1; }
+  .sw { position:relative; width:38px; height:22px; border-radius:99px; background:#3a3f4a; flex:none; transition:background .2s; }
+  .sw::after { content:''; position:absolute; top:3px; inset-inline-start:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:inset-inline-start .2s; }
+  .tog.on .sw { background:var(--acc); } .tog.on .sw::after { inset-inline-start:19px; }
   .menu .hint { font-size:12px; color:var(--mut); line-height:1.7; margin-top:4px; }
 
   .up { position:fixed; z-index:14; bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px)); left:50%; transform:translateX(-50%); width:min(420px,calc(100vw - 20px));
@@ -203,6 +207,8 @@
 <button class="sound" id="soundBtn" data-i18n="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
 <div class="panel menu" id="menu">
   <button id="shareBtn" data-i18n="share">🔗 شارك رابط الغرفة</button>
+  <h3 style="margin-top:6px" data-i18n="members">الأعضاء</h3>
+  <button id="namesBtn" class="tog"><span data-i18n="showNames">الأعضاء شايفين بعض</span><i class="sw"></i></button>
   <h3 style="margin-top:6px" data-i18n="movie">الفيلم</h3>
   <button id="pickBtn" data-i18n="pick">🎬 اختار فيلم من جهازي</button>
   <button class="dan" id="deleteBtn" data-i18n="del">🗑️ امسح الفيلم</button>
@@ -289,6 +295,9 @@ const isBoss = () => !!room.owner && (cid === room.owner || cid === room.boss);
 const canManage = () => !room.owner || isBoss();
 // someone turned away recently: until when (older rooms stored just the time)
 const noUntil = (c) => { const x = (room.no || {})[c]; return !x ? 0 : typeof x === 'number' ? x : +x.until || 0; };
+// the owner can hide who's who from regular members: they see a count, plain public chat, no names, no @
+const namesHidden = () => !!room.hideNames && !canManage();
+const shown = (c, name) => (namesHidden() && c !== cid && c !== room.owner ? t('member') : name || t('guest'));
 const isMuted = (c) => !!c && (room.mute || []).includes(c);   // the owner switched off this person's reactions and comments
 let waiting = false;   // I asked to come in and nobody has said yes yet
 const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
@@ -442,8 +451,9 @@ async function loadHave() {
 // ---------------- the shared room state (owned by the master) ----------------
 function applyRoom(next, from) {
   const movieChanged = (next.movie && next.movie.id) !== (room.movie && room.movie.id);
-  const oldReq = new Set((room.req || []).map((x) => x.cid)), wasMuted = isMuted(cid);
+  const oldReq = new Set((room.req || []).map((x) => x.cid)), wasMuted = isMuted(cid), wasHidden = !!room.hideNames;
   room = next; saveRoom();
+  if (!!room.hideNames !== wasHidden && !canManage()) toast(t(room.hideNames ? 'namesHiddenNow' : 'namesShownNow'));
   if (isMuted(cid) !== wasMuted) { toast(t(isMuted(cid) ? 'mutedYou' : 'unmutedYou')); if (isMuted(cid)) muteClose(); }
   document.body.classList.toggle('muted-me', isMuted(cid));
   for (const p of live()) if (isMuted(p.cid)) typers.delete(p.id);
@@ -471,7 +481,7 @@ function act(action, extra = {}) {  // anyone: request a change
 function handleAct(a, from) {
   const who = from ? from.cid : cid;
   if (['approve', 'reject', 'remove', 'mute', 'unmute'].includes(a.action)) return door(a, who, from);
-  if ((a.action === 'movie' || a.action === 'delete') && room.owner && who !== room.owner && who !== room.boss)
+  if ((a.action === 'movie' || a.action === 'delete' || a.action === 'names') && room.owner && who !== room.owner && who !== room.boss)
     return from ? sendTo(from, { t: 'note', key: 'onlyMgr', text: t('onlyMgr') }) : toast(t('onlyMgr'));
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
@@ -479,7 +489,9 @@ function handleAct(a, from) {
     if (a.action === 'pause') { r.status = 'paused'; r.pausedAt = pos; r.auto = !!a.auto; if (!a.auto) delete r.upd; }
     if (a.action === 'seek') { const to = Math.min(Math.max(+a.to || 0, 0), T); if (r.status === 'playing') { r.base = to; r.startedAt = now() + 800; } else { r.status = 'paused'; r.pausedAt = to; } }
     if (a.action === 'movie') { r.movie = a.movie; r.status = 'paused'; r.pausedAt = 0; r.auto = false; }
+    if (a.action === 'names') r.hideNames = !a.show;
     if (a.action === 'delete') { r.movie = null; r.status = 'stopped'; r.pausedAt = 0; }
+    if (a.action === 'names') r.hideNames = !a.show;
   });
 }
 // ---- the door (master only): let someone in, turn them away, or send them back out to the requests
@@ -492,7 +504,7 @@ function door(a, who, from) {
     if (live().length + (approved(cid) ? 1 : 0) >= MAX) return reply('roomFull5');
     commit((r) => { r.ok = [...new Set([...(r.ok || []), target])]; if (r.no) delete r.no[target]; });
     if (p && p.pending) {
-      p.pending = false; sendTo(p, { t: 'ok' }); sendTo(p, { t: 'room', room }); toast(t('joinedRoom', { n: p.name })); remember(p);
+      p.pending = false; sendTo(p, { t: 'ok' }); sendTo(p, { t: 'room', room }); toast(t('joinedRoom', { n: shown(p.cid, p.name) })); remember(p);
       sendTo(p, haveMsg()); if (lastBufSent) sendTo(p, { t: 'buf', on: true });
     }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss(); pumpWants();
@@ -505,7 +517,7 @@ function door(a, who, from) {
   if (a.action === 'remove') {
     if (target === room.owner) return reply('cantRemoveOwner');
     commit((r) => { r.ok = (r.ok || []).filter((x) => x !== target); });
-    if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(t('removed', { n: p.name })); }
+    if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(t('removed', { n: shown(p.cid, p.name) })); }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss();
   }
   if (a.action === 'mute' || a.action === 'unmute') {
@@ -678,7 +690,7 @@ function renderMembers() {
   }
   $('memList').replaceChildren(...list);
 }
-$('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); $('members').classList.toggle('show'); renderMembers(); };
+$('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); if (namesHidden()) { $('members').classList.remove('show'); return toast(t('membersHidden')); } $('members').classList.toggle('show'); renderMembers(); };
 setInterval(renderMembers, 2000);
 function wireCtl(c) {
   const p = P(c.peer);
@@ -710,7 +722,7 @@ function dropPeer(p) {
   peers.delete(p.id);
   try { p.dat && p.dat.close(); } catch (e) {}
   for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i);
-  if (p.ready && !p.pending) { toast(t('leftRoom', { n: p.name || t('guest') })); remember(p); }
+  if (p.ready && !p.pending) { toast(t('leftRoom', { n: shown(p.cid, p.name) })); remember(p); }
   if (p.pending) updReq();
   typers.delete(p.id); drawTyping();
   refreshConn(); roster(); checkWaiting(); pumpWants();
@@ -801,7 +813,7 @@ function onCtl(m, p, c) {
       p.pending = false;
     }
     const fresh = !p.ready; p.ready = true; refreshConn();
-    if (fresh) toast(t('withYou', { n: p.name }));
+    if (fresh) toast(t('withYou', { n: shown(p.cid, p.name) }));
     remember(p);
     if (isMaster) { selfCheck(); commit(() => {}); roster(); pickBoss(); } else if (p.id === MASTER_ID) syncClock();
     sendTo(p, haveMsg());
@@ -825,8 +837,8 @@ function onCtl(m, p, c) {
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if ((m.t === 'react' || m.t === 'chat' || m.t === 'typing') && isMuted(p.cid)) { typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
-  if (m.t === 'typing') { if (m.on) typers.set(p.id, { name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
+  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to); return; }
+  if (m.t === 'typing') { if (m.on) typers.set(p.id, { cid: p.cid, name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -1139,7 +1151,10 @@ function syncMenu() {
   const m = canManage();
   $('menuBtn').style.display = m ? '' : 'none'; $('shareTop').style.display = m ? 'none' : '';
   if (!m) $('menu').classList.remove('show');
+  $('namesBtn').classList.toggle('on', !room.hideNames);
+  if (namesHidden()) { $('members').classList.remove('show'); try { if (picked.size) { picked.clear(); drawChips(); } } catch (e) {} }
 }
+$('namesBtn').onclick = (e) => { e.stopPropagation(); act('names', { show: !!room.hideNames }); };
 $('shareTop').onclick = (e) => { e.stopPropagation(); $('shareBtn').click(); };
 $('menuBtn').onclick = (e) => { e.stopPropagation(); $('members').classList.remove('show'); $('menu').classList.toggle('show'); };
 document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) { $('menu').classList.remove('show'); $('members').classList.remove('show'); } });
@@ -1262,7 +1277,7 @@ $('chatBtn').onclick = (e) => {
 const typers = new Map();   // peer id -> { name, until }
 function drawTyping() {
   const now0 = Date.now(); for (const [k, v] of typers) if (v.until < now0) typers.delete(k);
-  const n = [...typers.values()].map((v) => v.name), el = $('typing');
+  const n = [...typers.values()].map((v) => shown(v.cid, v.name)), el = $('typing');
   if (!n.length) { el.replaceChildren(); return; }
   const txt = n.length === 1 ? t('typing1', { a: n[0] }) : n.length === 2 ? t('typing2', { a: n[0], b: n[1] }) : t('typingN', { n: n.length });
   const dots = document.createElement('i'); dots.innerHTML = '<b></b><b></b><b></b>';
@@ -1328,6 +1343,7 @@ function showMention() {
   if (!owner && v.trim() === '#') return hintMention(t('hashOwnerOnly'));   // say why nothing comes up
   if (at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return hideMention();
   atMode = v[at];
+  if (atMode === '@' && namesHidden()) return hideMention();
   const q = v.slice(at + 1, caret).trim().toLowerCase();
   const pool = live().filter((p) => (atMode === '#' ? p.cid !== room.owner : !picked.has(p.cid)));
   atList = pool.filter((p) => (p.name || t('guest')).toLowerCase().includes(q));

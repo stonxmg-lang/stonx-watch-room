@@ -3,6 +3,7 @@
 (function () {
   const D = {
     ar: {
+      showNames: 'الأعضاء شايفين أسامي بعض', member: 'عضو', membersHidden: '🙈 صاحب الغرفة مخبّي قائمة الأعضاء', namesHiddenNow: '🙈 صاحب الغرفة خبّى أسامي الأعضاء', namesShownNow: '👥 أسامي الأعضاء بقت ظاهرة',
       reqsT: 'طلبات الدخول', rejectedT: 'اترفضوا من شوية', rejectedRow: 'اترفض — تقدر تقبله برضو',
       rejected: 'اترفضوا من شوية ({n})',
       shareShort: '🔗 مشاركة', onlyMgr: 'اختيار الفيلم ومسحه لصاحب الغرفة بس', pickMine: 'اختار فيلم من جهازك وهيوصل للكل.', waitPick: 'مستنيين صاحب الغرفة يختار فيلم.',
@@ -60,6 +61,7 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      showNames: 'Members can see each other’s names', member: 'Member', membersHidden: '🙈 The room owner has hidden the member list', namesHiddenNow: '🙈 The room owner hid members’ names', namesShownNow: '👥 Members’ names are visible now',
       reqsT: 'Join requests', rejectedT: 'Recently declined', rejectedRow: 'Declined — you can still accept',
       rejected: 'Recently declined ({n})',
       shareShort: '🔗 Share', onlyMgr: 'Only the room owner can pick or remove the movie', pickMine: 'Pick a movie from your device and it reaches everyone.', waitPick: 'Waiting for the room owner to pick a movie.',
@@ -117,6 +119,7 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      showNames: 'Üyeler birbirinin adını görebilir', member: 'Üye', membersHidden: '🙈 Oda sahibi üye listesini gizledi', namesHiddenNow: '🙈 Oda sahibi üye adlarını gizledi', namesShownNow: '👥 Üye adları artık görünüyor',
       reqsT: 'Katılma istekleri', rejectedT: 'Az önce reddedilenler', rejectedRow: 'Reddedildi — yine de kabul edebilirsin',
       rejected: 'Az önce reddedilenler ({n})',
       shareShort: '🔗 Paylaş', onlyMgr: 'Filmi yalnızca oda sahibi seçebilir veya kaldırabilir', pickMine: 'Cihazından bir film seç, herkese ulaşsın.', waitPick: 'Oda sahibinin film seçmesi bekleniyor.',
@@ -174,6 +177,7 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      showNames: 'اعضا اسم همدیگر را ببینند', member: 'عضو', membersHidden: '🙈 صاحب اتاق فهرست اعضا را پنهان کرده', namesHiddenNow: '🙈 صاحب اتاق اسم اعضا را پنهان کرد', namesShownNow: '👥 اسم اعضا حالا دیده می‌شود',
       reqsT: 'درخواست‌های ورود', rejectedT: 'تازه رد شده‌ها', rejectedRow: 'رد شد — هنوز می‌توانی قبول کنی',
       rejected: 'تازه رد شده‌ها ({n})',
       shareShort: '🔗 اشتراک', onlyMgr: 'انتخاب و حذف فیلم فقط با صاحب اتاق است', pickMine: 'از دستگاهت یک فیلم انتخاب کن تا به همه برسد.', waitPick: 'منتظر انتخاب فیلم توسط صاحب اتاق هستیم.',
@@ -231,6 +235,7 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      showNames: 'Les membres voient les noms des autres', member: 'Membre', membersHidden: '🙈 Le propriétaire a masqué la liste des membres', namesHiddenNow: '🙈 Le propriétaire a masqué les noms des membres', namesShownNow: '👥 Les noms des membres sont visibles',
       reqsT: 'Demandes d’entrée', rejectedT: 'Refusés récemment', rejectedRow: 'Refusé — tu peux encore accepter',
       rejected: 'Refusés récemment ({n})',
       shareShort: '🔗 Partager', onlyMgr: 'Seul le propriétaire du salon peut choisir ou retirer le film', pickMine: 'Choisis un film sur ton appareil, il arrivera chez tout le monde.', waitPick: 'En attente du choix du film par le propriétaire.',
@@ -288,6 +293,7 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      showNames: 'Участники видят имена друг друга', member: 'Участник', membersHidden: '🙈 Владелец комнаты скрыл список участников', namesHiddenNow: '🙈 Владелец комнаты скрыл имена участников', namesShownNow: '👥 Имена участников снова видны',
       reqsT: 'Запросы на вход', rejectedT: 'Недавно отклонённые', rejectedRow: 'Отклонён — ещё можно принять',
       rejected: 'Недавно отклонённые ({n})',
       shareShort: '🔗 Поделиться', onlyMgr: 'Выбирать и убирать фильм может только владелец комнаты', pickMine: 'Выбери фильм на своём устройстве, и он дойдёт до всех.', waitPick: 'Ждём, пока владелец комнаты выберет фильм.',
