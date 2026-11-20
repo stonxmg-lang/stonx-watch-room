@@ -3,6 +3,10 @@
 (function () {
   const D = {
     ar: {
+      recapS: 'ملخص السهرة', recapS2: '📸 ملخص السهرة', recapTitle: 'اتفرجنا سوا 🍿', recapReacts: 'تفاعل', recapTopEmo: 'أكتر إيموجي', recapBest: 'أجمد لحظة', recapTop: 'الأكثر تفاعلاً',
+      recapMoments: 'لحظات التفاعل', recapNone: 'مفيش تفاعلات اتسجلت', recapWho: 'مين اتفرج', recapPeople: '{n} أشخاص', recapShare: '📤 شارك', recapSave: '⬇️ حفظ',
+      askSent: '✋ طلبت من صاحب الغرفة يوقف الفيلم', askSentPlay: '✋ طلبت من صاحب الغرفة يكمّل الفيلم', askPause: '✋ {n} عايز يوقف الفيلم', askPlay: '✋ {n} عايز يكمّل الفيلم',
+      doPause: '⏸ وقّف', doPlay: '▶ كمّل', ignore: 'تجاهل', askWait: 'استنى شوية قبل ما تطلب تاني',
       shareS: 'شارك رابط الغرفة', pickS: 'اختار فيلم من جهازي', delS: 'امسح الفيلم', hintS: 'الفيلم بيروح من جهازك للباقيين مباشرة. خلي الصفحة مفتوحة لحد ما يوصل للكل ✅',
       setPlay: 'التشغيل والتفاعل', allCtl: 'الكل يتحكم في التشغيل', anyEmoji: 'الكل يستخدم أي إيموجي',
       ctlLocked: 'التحكم في التشغيل لصاحب الغرفة بس', ctlLockedNow: '🔒 صاحب الغرفة قفل التحكم في التشغيل', ctlOpenNow: '🎮 الكل يقدر يتحكم في التشغيل دلوقتي',
@@ -67,6 +71,10 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      recapS: 'Movie night recap', recapS2: '📸 Movie night recap', recapTitle: 'We watched together 🍿', recapReacts: 'Reactions', recapTopEmo: 'Top emoji', recapBest: 'Best moment', recapTop: 'Most reactive',
+      recapMoments: 'Reaction moments', recapNone: 'No reactions recorded', recapWho: 'Who watched', recapPeople: '{n} people', recapShare: '📤 Share', recapSave: '⬇️ Save',
+      askSent: '✋ You asked the room owner to pause', askSentPlay: '✋ You asked the room owner to carry on', askPause: '✋ {n} wants to pause', askPlay: '✋ {n} wants to carry on',
+      doPause: '⏸ Pause', doPlay: '▶ Play', ignore: 'Ignore', askWait: 'Wait a moment before asking again',
       shareS: 'Share the room link', pickS: 'Pick a movie from my device', delS: 'Remove the movie', hintS: 'The movie goes straight from your device to the others. Keep this page open until everyone has it ✅',
       setPlay: 'Playback & reactions', allCtl: 'Everyone controls playback', anyEmoji: 'Everyone can use any emoji',
       ctlLocked: 'Only the room owner controls playback', ctlLockedNow: '🔒 The room owner locked playback controls', ctlOpenNow: '🎮 Everyone can control playback now',
@@ -131,6 +139,10 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      recapS: 'Film gecesi özeti', recapS2: '📸 Film gecesi özeti', recapTitle: 'Birlikte izledik 🍿', recapReacts: 'Tepki', recapTopEmo: 'En çok emoji', recapBest: 'En iyi an', recapTop: 'En çok tepki veren',
+      recapMoments: 'Tepki anları', recapNone: 'Kaydedilen tepki yok', recapWho: 'Kimler izledi', recapPeople: '{n} kişi', recapShare: '📤 Paylaş', recapSave: '⬇️ Kaydet',
+      askSent: '✋ Oda sahibinden durdurmasını istedin', askSentPlay: '✋ Oda sahibinden devam etmesini istedin', askPause: '✋ {n} durdurmak istiyor', askPlay: '✋ {n} devam etmek istiyor',
+      doPause: '⏸ Durdur', doPlay: '▶ Devam', ignore: 'Yoksay', askWait: 'Tekrar istemeden önce biraz bekle',
       shareS: 'Oda bağlantısını paylaş', pickS: 'Cihazımdan film seç', delS: 'Filmi kaldır', hintS: 'Film doğrudan senin cihazından diğerlerine gider. Herkese ulaşana kadar bu sayfayı açık tut ✅',
       setPlay: 'Oynatma ve tepkiler', allCtl: 'Oynatmayı herkes kontrol eder', anyEmoji: 'Herkes her emojiyi kullanabilir',
       ctlLocked: 'Oynatmayı yalnızca oda sahibi kontrol eder', ctlLockedNow: '🔒 Oda sahibi oynatma kontrolünü kilitledi', ctlOpenNow: '🎮 Artık herkes oynatmayı kontrol edebilir',
@@ -195,6 +207,10 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      recapS: 'خلاصه‌ی شب فیلم', recapS2: '📸 خلاصه‌ی شب فیلم', recapTitle: 'با هم تماشا کردیم 🍿', recapReacts: 'واکنش', recapTopEmo: 'پرتکرارترین ایموجی', recapBest: 'بهترین لحظه', recapTop: 'فعال‌ترین',
+      recapMoments: 'لحظه‌های واکنش', recapNone: 'واکنشی ثبت نشد', recapWho: 'چه کسانی دیدند', recapPeople: '{n} نفر', recapShare: '📤 اشتراک', recapSave: '⬇️ ذخیره',
+      askSent: '✋ از صاحب اتاق خواستی فیلم را نگه دارد', askSentPlay: '✋ از صاحب اتاق خواستی فیلم را ادامه دهد', askPause: '✋ {n} می‌خواهد فیلم نگه داشته شود', askPlay: '✋ {n} می‌خواهد فیلم ادامه پیدا کند',
+      doPause: '⏸ توقف', doPlay: '▶ ادامه', ignore: 'نادیده بگیر', askWait: 'کمی صبر کن و بعد دوباره بخواه',
       shareS: 'اشتراک لینک اتاق', pickS: 'انتخاب فیلم از دستگاه من', delS: 'حذف فیلم', hintS: 'فیلم مستقیم از دستگاه تو به بقیه می‌رسد. این صفحه را باز نگه دار تا به همه برسد ✅',
       setPlay: 'پخش و واکنش‌ها', allCtl: 'همه پخش را کنترل کنند', anyEmoji: 'همه هر ایموجی‌ای استفاده کنند',
       ctlLocked: 'کنترل پخش فقط با صاحب اتاق است', ctlLockedNow: '🔒 صاحب اتاق کنترل پخش را قفل کرد', ctlOpenNow: '🎮 حالا همه می‌توانند پخش را کنترل کنند',
@@ -259,6 +275,10 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      recapS: 'Récap de la soirée', recapS2: '📸 Récap de la soirée', recapTitle: 'On a regardé ensemble 🍿', recapReacts: 'Réactions', recapTopEmo: 'Emoji favori', recapBest: 'Meilleur moment', recapTop: 'Le plus réactif',
+      recapMoments: 'Moments de réaction', recapNone: 'Aucune réaction enregistrée', recapWho: 'Qui a regardé', recapPeople: '{n} personnes', recapShare: '📤 Partager', recapSave: '⬇️ Enregistrer',
+      askSent: '✋ Tu as demandé une pause au propriétaire', askSentPlay: '✋ Tu as demandé au propriétaire de reprendre', askPause: '✋ {n} demande une pause', askPlay: '✋ {n} demande de reprendre',
+      doPause: '⏸ Pause', doPlay: '▶ Reprendre', ignore: 'Ignorer', askWait: 'Attends un peu avant de redemander',
       shareS: 'Partager le lien du salon', pickS: 'Choisir un film sur mon appareil', delS: 'Retirer le film', hintS: 'Le film part directement de ton appareil vers les autres. Garde cette page ouverte jusqu’à ce que tout le monde l’ait ✅',
       setPlay: 'Lecture et réactions', allCtl: 'Tout le monde contrôle la lecture', anyEmoji: 'Tout le monde peut utiliser n’importe quel emoji',
       ctlLocked: 'Seul le propriétaire contrôle la lecture', ctlLockedNow: '🔒 Le propriétaire a verrouillé la lecture', ctlOpenNow: '🎮 Tout le monde peut contrôler la lecture',
@@ -323,6 +343,10 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      recapS: 'Итоги вечера', recapS2: '📸 Итоги вечера', recapTitle: 'Смотрели вместе 🍿', recapReacts: 'Реакций', recapTopEmo: 'Главный эмодзи', recapBest: 'Лучший момент', recapTop: 'Самый активный',
+      recapMoments: 'Моменты реакций', recapNone: 'Реакций не было', recapWho: 'Кто смотрел', recapPeople: '{n} чел.', recapShare: '📤 Поделиться', recapSave: '⬇️ Сохранить',
+      askSent: '✋ Ты попросил владельца поставить паузу', askSentPlay: '✋ Ты попросил владельца продолжить', askPause: '✋ {n} просит паузу', askPlay: '✋ {n} просит продолжить',
+      doPause: '⏸ Пауза', doPlay: '▶ Продолжить', ignore: 'Игнорировать', askWait: 'Подожди немного, прежде чем просить снова',
       shareS: 'Поделиться ссылкой', pickS: 'Выбрать фильм на моём устройстве', delS: 'Убрать фильм', hintS: 'Фильм идёт прямо с твоего устройства к остальным. Не закрывай страницу, пока он не дойдёт до всех ✅',
       setPlay: 'Просмотр и реакции', allCtl: 'Все управляют просмотром', anyEmoji: 'Все могут использовать любые эмодзи',
       ctlLocked: 'Управлять просмотром может только владелец', ctlLockedNow: '🔒 Владелец закрыл управление просмотром', ctlOpenNow: '🎮 Теперь все могут управлять просмотром',

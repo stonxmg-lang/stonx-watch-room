@@ -4,8 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120r">
+<meta name="build" content="b20261120s">
 <title>STONX · غرفة مشاهدة</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="STONX Watch Room">
+<meta property="og:title" content="تعالى نتفرج سوا 🎬">
+<meta property="og:description" content="غرفة مشاهدة: نفس الفيلم في نفس الثانية، من جهاز لجهاز، بشات وتفاعل — لحد 5 أشخاص.">
+<meta property="og:image" content="https://stonx-watch-room.vercel.app/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="غرفة مشاهدة: نفس الفيلم في نفس الثانية، من جهاز لجهاز، بشات وتفاعل — لحد 5 أشخاص.">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -45,6 +53,21 @@
   .track b { display:block; height:100%; width:0; background:var(--red); }
   .seek { position:absolute; inset:0; width:100%; opacity:0; cursor:pointer; }
   .ctl .seekwrap:hover .track { height:6px; }
+  /* where the room reacted the most: little bars rising above the timeline */
+  .heat { position:absolute; inset-inline:0; bottom:13px; height:14px; display:flex; align-items:flex-end; gap:1px; pointer-events:none; direction:ltr; }
+  .heat i { flex:1; background:linear-gradient(#ffd166,#ff8a3d); border-radius:2px 2px 0 0; opacity:.85; min-height:0; }
+  /* "please pause" request, shown to the owner */
+  .ask { position:fixed; z-index:31; top:max(64px,calc(env(safe-area-inset-top) + 56px)); left:50%; transform:translateX(-50%); width:min(360px,calc(100vw - 20px));
+         background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:10px 12px; display:none; align-items:center; gap:8px; }
+  .ask.show { display:flex; } .ask .tx { flex:1; font-weight:800; font-size:13.5px; }
+  .ask button { font:inherit; font-size:12.5px; font-weight:800; border:0; border-radius:99px; padding:7px 12px; cursor:pointer; background:#ffffff14; color:var(--fg); }
+  .ask button.yes { background:var(--acc); color:#04140a; }
+  /* the end-of-movie recap card */
+  .recap { position:fixed; inset:0; z-index:40; background:#000e; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:16px; }
+  .recap.show { display:flex; } .recap img { max-width:100%; max-height:74vh; border-radius:18px; box-shadow:0 20px 60px #000; }
+  .recap .row { display:flex; gap:10px; } .recap .row button { font:inherit; font-weight:800; font-size:15px; border:0; border-radius:99px; padding:11px 20px; cursor:pointer; }
+  .recap .row .yes { background:var(--acc); color:#04140a; } .recap .row .sec2 { background:#1d212a; color:var(--fg); border:1px solid var(--line); }
+  #msgBtn2 { margin-top:-6px; }
   .time { font-variant-numeric:tabular-nums; font-size:13px; color:#d6d9df; margin-inline:6px; white-space:nowrap; }
   .grow { flex:1; }
   input[type=range].vol { width:70px; accent-color:#fff; }
@@ -225,6 +248,7 @@
   <button class="mi tog" id="ctlBtn"><b>🎮</b><span data-i18n="allCtl">الكل يتحكم في التشغيل</span><i class="sw"></i></button>
   <button class="mi tog" id="emoBtn"><b>😊</b><span data-i18n="anyEmoji">الكل يستخدم أي إيموجي</span><i class="sw"></i></button>
   <div class="sec" data-i18n="movie">الفيلم</div>
+  <button class="mi" id="recapBtn"><b>📸</b><span data-i18n="recapS">ملخص السهرة</span></button>
   <button class="mi" id="pickBtn"><b>🎬</b><span data-i18n="pickS">اختار فيلم من جهازي</span></button>
   <button class="mi dan" id="deleteBtn"><b>🗑️</b><span data-i18n="delS">امسح الفيلم</span></button>
   <p class="hint" data-i18n="hintS"></p>
@@ -238,7 +262,7 @@
 </div>
 
 <div class="bar" id="bar">
-  <div class="seekwrap"><div class="track"><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
+  <div class="seekwrap"><div class="heat" id="heat"></div><div class="track"><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
   <div class="row">
     <button class="ib big" id="playBtn" aria-label="تشغيل" data-i18n-aria="aPlay"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="back10" aria-label="رجوع 10" data-i18n-aria="aBack"><small>−10</small></button>
@@ -253,7 +277,9 @@
   </div>
 </div>
 
-<div class="layer msg" id="msg"><div id="msgIcon"></div><h2 id="msgH"></h2><p id="msgP"></p><button class="btn" id="msgBtn" style="display:none"></button></div>
+<div class="layer msg" id="msg"><div id="msgIcon"></div><h2 id="msgH"></h2><p id="msgP"></p><button class="btn" id="msgBtn" style="display:none"></button><button class="btn sec" id="msgBtn2" style="display:none"></button></div>
+<div class="ask" id="ask"><span class="tx" id="askTx"></span><button class="yes" id="askYes"></button><button id="askNo"></button></div>
+<div class="recap" id="recap"><img id="recapImg" alt=""><div class="row"><button class="yes" id="recapShare"></button><button class="sec2" id="recapSave"></button><button class="sec2" id="recapClose">✕</button></div></div>
 
 <div class="layer gate" id="gate">
   <span class="brand">STONX · WATCH TOGETHER</span>
@@ -860,6 +886,7 @@ function onCtl(m, p, c) {
   if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { undeny(); waiting = false; applyRoom(m.room); pumpWants(); } return; }
   if (m.t === 'wait') { if (p.id === MASTER_ID && !isMaster) { undeny(); goWait(); } return; }
   if (m.t === 'ok') { if (p.id === MASTER_ID && waiting) { waiting = false; toast(t('accepted')); } return; }
+  if (m.t === 'ask') { if ((m.what === 'pause' || m.what === 'play') && canCtl(cid) && room.lockCtl) showAsk(p, m.what); return; }
   if (m.t === 'note') { if (typeof m.key === 'string' && /^\w+$/.test(m.key)) toast(t(m.key)); else if (typeof m.text === 'string') toast(m.text.slice(0, 80)); return; }
   if (m.t === 'act') { if (isMaster) handleAct(m, p); return; }
   if (m.t === 'bye') { dropPeer(p); return; }
@@ -869,7 +896,7 @@ function onCtl(m, p, c) {
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if ((m.t === 'react' || m.t === 'chat' || m.t === 'typing') && isMuted(p.cid)) { typers.delete(p.id); drawTyping(); return; }
-  if (m.t === 'react') { if (isEmoji(m.e) && (!room.emo || p.cid === room.owner || room.emo.includes(m.e))) flyEmoji(m.e); return; }
+  if (m.t === 'react') { if (isEmoji(m.e) && (!room.emo || p.cid === room.owner || room.emo.includes(m.e))) { flyEmoji(m.e); noteReact(m.e, p.cid, p.name); } return; }
   if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to, { c: p.cid, n: p.name, re: cleanRe(m.re) }); return; }
   if (m.t === 'typing') { if (m.on) typers.set(p.id, { cid: p.cid, name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
@@ -1067,9 +1094,10 @@ function tidyUrls(c) {
 function load(k, i) { const u = partUrl(i); if (!u || loaded[k] === u) return; loaded[k] = u; vids[k].src = u; vids[k].load(); }
 function show(k) { active = k; vids.forEach((v, i) => { v.classList.toggle('on', i === k); if (i !== k) { v.pause(); v.muted = true; } }); applyVolume(); }
 function applyVolume() { const v = vids[active]; v.volume = volume; v.muted = muted; $('volIcon').style.opacity = muted ? 0.4 : 1; }
-function message(h, p, icon, btn) {
+function message(h, p, icon, btn, btn2) {
   $('msgH').textContent = h || ''; $('msgP').textContent = p || ''; $('msgIcon').innerHTML = icon || '';
   const b = $('msgBtn'); if (btn) { b.style.display = ''; b.textContent = btn.text; b.onclick = btn.fn; } else b.style.display = 'none';
+  const b2 = $('msgBtn2'); if (btn2) { b2.style.display = ''; b2.textContent = btn2.text; b2.onclick = btn2.fn; } else b2.style.display = 'none';
   $('msg').classList.toggle('show', !!h);
 }
 function showFatal(h, p) { joined = false; $('gate').style.display = 'flex'; $('gateTitle').textContent = h; $('gateSub').textContent = p; $('nameIn').style.display = 'none'; $('joinBtn').style.display = 'none'; }
@@ -1135,7 +1163,7 @@ function tick() {
   }
   const waitStart = playing && now() < room.startedAt;  // short countdown so both start on the same frame
   countdown(waitStart && !room.auto ? (room.startedAt - now()) / 1000 : 0);
-  if (pos >= T) { vids.forEach((v) => v.pause()); setBuffering(false); return message(t('endT'), t('endP'), '', { text: t('again'), fn: () => act('seek', { to: 0 }) }); }
+  if (pos >= T) { vids.forEach((v) => v.pause()); setBuffering(false); return message(t('endT'), t('endP'), '', { text: t('recapS2'), fn: openRecap }, canCtl(cid) ? { text: t('again'), fn: () => act('seek', { to: 0 }) } : null); }
   message('');
 
   const loc = locate(pos); if (!loc) return;
@@ -1165,12 +1193,28 @@ function tick() {
 let stallSince = 0;
 
 // ---------------- controls ----------------
-const ctlOk = () => (canCtl(cid) ? true : (toast(t('ctlLocked')), false));
+let askedAt0 = 0;
+function askOwner() {
+  if (Date.now() - askedAt0 < 15000) return toast(t('askWait'));
+  const to = live().filter((p) => p.cid === room.owner || p.cid === room.boss || (room.lockCtl && hasCtl(p.cid)));
+  if (!to.length) return toast(t('ctlLocked'));
+  const what = room.status === 'playing' ? 'pause' : 'play';
+  askedAt0 = Date.now(); to.forEach((p) => sendTo(p, { t: 'ask', what })); toast(t(what === 'pause' ? 'askSent' : 'askSentPlay'));
+}
+let askT = null;
+function showAsk(p, what) {
+  $('askTx').textContent = t(what === 'pause' ? 'askPause' : 'askPlay', { n: shown(p.cid, p.name) });
+  $('askYes').textContent = t(what === 'pause' ? 'doPause' : 'doPlay'); $('askNo').textContent = t('ignore');
+  $('askYes').onclick = (e) => { e.stopPropagation(); $('ask').classList.remove('show'); act(what); };
+  $('askNo').onclick = (e) => { e.stopPropagation(); $('ask').classList.remove('show'); };
+  $('ask').classList.add('show'); ding(); clearTimeout(askT); askT = setTimeout(() => $('ask').classList.remove('show'), 15000);
+}
+const ctlOk = () => (canCtl(cid) ? true : (askOwner(), false));
 $('playBtn').onclick = () => ctlOk() && act(room.status === 'playing' ? 'pause' : 'play');
-$('back10').onclick = () => ctlOk() && act('seek', { to: position() - 10 });
-$('fwd10').onclick = () => ctlOk() && act('seek', { to: position() + 10 });
+$('back10').onclick = () => (canCtl(cid) ? act('seek', { to: position() - 10 }) : toast(t('ctlLocked')));
+$('fwd10').onclick = () => (canCtl(cid) ? act('seek', { to: position() + 10 }) : toast(t('ctlLocked')));
 $('seek').addEventListener('input', () => { dragging = true; });
-$('seek').addEventListener('change', (e) => { dragging = false; if (ctlOk()) act('seek', { to: +e.target.value }); });
+$('seek').addEventListener('change', (e) => { dragging = false; if (canCtl(cid)) act('seek', { to: +e.target.value }); else toast(t('ctlLocked')); });
 $('soundBtn').onclick = (e) => { e.stopPropagation(); muted = false; applyVolume(); vids[active].play().catch(() => {}); $('soundBtn').classList.remove('show'); };
 $('muteBtn').onclick = () => { $('soundBtn').classList.remove('show'); muted = !muted; if (!muted && volume === 0) { volume = 1; $('vol').value = 1; } applyVolume(); };
 $('vol').oninput = (e) => { volume = +e.target.value; muted = volume === 0; applyVolume(); };
@@ -1230,6 +1274,114 @@ const graphemes = (x) => (typeof Intl !== 'undefined' && Intl.Segmenter
 const DEFAULT_REACTS = ['❤️', '😂', '😍', '😮', '😢', '🔥', '👏', '👍'];
 let reacts = (() => { try { const a = JSON.parse(store.get('wr_reacts')); if (Array.isArray(a)) return a.filter(isEmoji).slice(0, 30); } catch (e) {} return DEFAULT_REACTS.slice(); })();
 const saveReacts = () => store.set('wr_reacts', JSON.stringify(reacts));
+// ---- what the room did during this movie: reactions per moment, per emoji, per person, and who watched
+const BINS = 120;
+let stats = null, statsDirty = false;
+function statsFor() {
+  const mid = room.movie && room.movie.id; if (!mid) return null;
+  if (!stats || stats.mid !== mid) {
+    try { stats = JSON.parse(store.get('wr2_stats_' + roomId)); } catch (e) { stats = null; }
+    if (!stats || stats.mid !== mid) stats = { mid, name: room.movie.name, heat: new Array(BINS).fill(0), emo: {}, who: {}, seen: {} };
+  }
+  return stats;
+}
+function noteReact(e, c, name) {
+  const st = statsFor(), T = total(); if (!st || !T) return;
+  const b = Math.min(BINS - 1, Math.max(0, Math.floor((Math.min(position(), T) / T) * BINS)));
+  st.heat[b]++; st.emo[e] = (st.emo[e] || 0) + 1;
+  const w = st.who[c] || (st.who[c] = { n: name || t('guest'), k: 0 }); w.k++; w.n = name || w.n;
+  statsDirty = true; drawHeat();
+}
+function drawHeat() {
+  const st = statsFor(), el = $('heat');
+  if (!st) { el.replaceChildren(); return; }
+  const mx = Math.max(...st.heat); if (!mx) { el.replaceChildren(); return; }
+  if (el.childElementCount !== BINS) el.replaceChildren(...st.heat.map(() => document.createElement('i')));
+  st.heat.forEach((v, k) => { el.children[k].style.height = v ? Math.max(2, Math.round((v / mx) * 14)) + 'px' : '0'; });
+}
+setInterval(() => {
+  const st = statsFor(); if (!st) return;
+  if (room.status === 'playing') {   // who's watching
+    const add = (c, n) => { if (c && !st.seen[c]) { st.seen[c] = n || t('guest'); statsDirty = true; } };
+    add(cid, store.get('wr_name')); live().forEach((p) => add(p.cid, p.name));
+  }
+  if (statsDirty) { statsDirty = false; store.set('wr2_stats_' + roomId, JSON.stringify(st)); }
+  drawHeat();
+}, 4000);
+// ---- the recap card: drawn on a canvas so it can be shared as a picture (story / status)
+function fmtLong(sec) { return fmt(sec); }
+async function recapCanvas() {
+  const st = statsFor() || { heat: new Array(BINS).fill(0), emo: {}, who: {}, seen: {}, name: room.movie ? room.movie.name : '' };
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'); if (!x.roundRect) x.roundRect = function (a, b, c, d) { this.rect(a, b, c, d); };
+  const rtl = window.I18N.rtl, F = (w, px) => `${w} ${px}px Cairo, system-ui, sans-serif`;
+  try { await document.fonts.load(F(800, 40)); } catch (e) {}
+  const g = x.createRadialGradient(W * 0.75, 120, 40, W * 0.5, H * 0.4, H); g.addColorStop(0, '#163a28'); g.addColorStop(0.45, '#0a1510'); g.addColorStop(1, '#07080b');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.direction = rtl ? 'rtl' : 'ltr'; x.textAlign = 'start'; x.textBaseline = 'alphabetic';
+  const X0 = rtl ? W - 80 : 80, line = (txt, y, font, color) => { x.font = font; x.fillStyle = color; x.fillText(txt, X0, y, W - 160); };
+  try { const im = new Image(); im.src = '/icon-192.webp'; await im.decode(); x.drawImage(im, rtl ? 80 : W - 80 - 120, 70, 120, 120); } catch (e) {}
+  line('STONX · WATCH TOGETHER', 120, F(800, 26), '#8a909c');
+  line(t('recapTitle'), 190, F(800, 44), '#38e07b');
+  let nm = st.name || (room.movie && room.movie.name) || ''; x.font = F(800, 72); while (nm.length > 4 && x.measureText(nm).width > W - 160) nm = nm.slice(0, -2);
+  if (nm !== (st.name || '')) nm += '…';
+  line(nm, 300, F(800, 72), '#ffffff');
+  const total = Object.values(st.emo).reduce((a, b) => a + b, 0);
+  const topE = Object.entries(st.emo).sort((a, b) => b[1] - a[1])[0];
+  const topW = namesHidden() ? null : Object.values(st.who).sort((a, b) => b.k - a.k)[0];
+  const mx = Math.max(...st.heat), best = mx ? st.heat.indexOf(mx) : -1, T = total0();
+  const tiles = [
+    [String(total), t('recapReacts')],
+    [topE ? topE[0] : '—', t('recapTopEmo')],
+    [best >= 0 && T ? fmt(((best + 0.5) / BINS) * T) : '—', t('recapBest')],
+    [topW ? topW.n : '—', t('recapTop')],
+  ];
+  tiles.forEach(([big, small], k) => {
+    const cw = (W - 160 - 30) / 2, ch = 190, col = k % 2, row = Math.floor(k / 2);
+    const left = rtl ? W - 80 - cw - col * (cw + 30) : 80 + col * (cw + 30), top = 370 + row * (ch + 30);
+    x.fillStyle = '#ffffff10'; x.beginPath(); x.roundRect(left, top, cw, ch, 28); x.fill();
+    const tx = rtl ? left + cw - 36 : left + 36;
+    let b = big; x.font = F(800, 64); while (b.length > 2 && x.measureText(b).width > cw - 72) b = b.slice(0, -2);
+    x.fillStyle = '#fff'; x.fillText(b !== big ? b + '…' : b, tx, top + 100);
+    x.font = F(600, 30); x.fillStyle = '#9aa0aa'; x.fillText(small, tx, top + 152);
+  });
+  // the reaction curve over the whole movie
+  const gy = 860, gh = 170; x.font = F(700, 30); x.fillStyle = '#cfd3da'; x.fillText(t('recapMoments'), X0, gy - 24);
+  x.fillStyle = '#ffffff0d'; x.beginPath(); x.roundRect(80, gy, W - 160, gh, 24); x.fill();
+  if (mx) {
+    const bw = (W - 200) / BINS; x.direction = 'ltr';
+    st.heat.forEach((v, k) => { if (!v) return; const h = Math.max(6, (v / mx) * (gh - 40)); const gx = 100 + k * bw;
+      const gg = x.createLinearGradient(0, gy + gh - 20 - h, 0, gy + gh - 20); gg.addColorStop(0, '#ffd166'); gg.addColorStop(1, '#ff8a3d'); x.fillStyle = gg;
+      x.beginPath(); x.roundRect(gx, gy + gh - 20 - h, Math.max(2, bw - 2), h, 3); x.fill(); });
+    x.direction = rtl ? 'rtl' : 'ltr';
+  } else { x.font = F(600, 28); x.fillStyle = '#6b717c'; x.textAlign = 'center'; x.fillText(t('recapNone'), W / 2, gy + gh / 2 + 10); x.textAlign = 'start'; }
+  // who watched
+  const names = Object.values(st.seen);
+  line(t('recapWho'), 1110, F(700, 30), '#cfd3da');
+  let who = namesHidden() ? t('recapPeople', { n: names.length || 1 }) : names.join(' · ') || (store.get('wr_name') || '');
+  x.font = F(800, 40); while (who.length > 4 && x.measureText(who).width > W - 160) who = who.slice(0, -2);
+  line(who, 1170, F(800, 40), '#ffffff');
+  x.font = F(600, 26); x.fillStyle = '#6b717c'; x.textAlign = 'center'; x.direction = 'ltr';
+  const d0 = new Date(); x.fillText('stonx-watch-room.vercel.app  ·  ' + `${d0.getDate()}/${d0.getMonth() + 1}/${d0.getFullYear()}`, W / 2, H - 50);
+  return cv;
+}
+const total0 = () => total();
+let recapBlob = null;
+async function openRecap() {
+  const cv = await recapCanvas();
+  recapBlob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+  $('recapImg').src = URL.createObjectURL(recapBlob); $('recap').classList.add('show');
+  $('menu').classList.remove('show');
+}
+$('recapShare').onclick = async () => {
+  const f = new File([recapBlob], 'stonx-recap.png', { type: 'image/png' });
+  try { if (navigator.canShare && navigator.canShare({ files: [f] })) return await navigator.share({ files: [f], title: t('recapTitle') }); } catch (e) { if (e && e.name === 'AbortError') return; }
+  $('recapSave').click();
+};
+$('recapSave').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(recapBlob); a.download = 'stonx-recap.png'; a.click(); };
+$('recapClose').onclick = () => $('recap').classList.remove('show');
+$('recapBtn').onclick = (e) => { e.stopPropagation(); openRecap(); };
+$('recapShare').textContent = t('recapShare'); $('recapSave').textContent = t('recapSave');
 function flyEmoji(e) {
   const fx = $('fx'); if (fx.childElementCount > 70) fx.firstChild.remove();   // keep bursts light on the phone
   const s = document.createElement('span');
@@ -1263,7 +1415,7 @@ function setEditing(on) { $('tray').classList.toggle('editing', on); if (!on) em
 let burstT = null, press = null;
 function stopBurst() { clearTimeout(burstT); burstT = null; if (press) { clearTimeout(press.t); press = null; } }
 const editing = () => $('tray').classList.contains('editing');
-const react1 = (e) => { if (isMuted(cid)) { stopBurst(); return toast(t('mutedNow')); } if (emoSet() && !emoSet().includes(e)) return; flyEmoji(e); send({ t: 'react', e }); };
+const react1 = (e) => { if (isMuted(cid)) { stopBurst(); return toast(t('mutedNow')); } if (emoSet() && !emoSet().includes(e)) return; flyEmoji(e); noteReact(e, cid, store.get('wr_name')); send({ t: 'react', e }); };
 function muteClose() { stopBurst(); $('tray').classList.remove('show'); $('chatbar').classList.remove('show'); try { $('chatIn').blur(); } catch (e) {} typingOff(); hideMention(); }
 function updateReactBtn() { $('reactBtn').textContent = (emoSet() || reacts)[0] || '😊'; }
 // the tray shows my own emojis, or the owner's set when the owner has limited them
