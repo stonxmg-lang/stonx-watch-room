@@ -101,7 +101,7 @@ const $ = (id) => document.getElementById(id);
 const qs = new URLSearchParams(location.search);
 $('create').onclick = () => {
   const code = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
-  try { const t = $('title').value.trim(); if (t) localStorage.setItem('wr2_title_' + code, t); } catch (e) {}
+  try { const t = $('title').value.trim(); if (t) localStorage.setItem('wr2_title_' + code, t); localStorage.setItem('wr2_own_' + code, '1'); } catch (e) {}
   location.href = '/r/' + code + location.search;
 };
 // ---- guessing room codes: 3 wrong tries and typing a code is locked for a while (5 min, then 30 min if it goes on).

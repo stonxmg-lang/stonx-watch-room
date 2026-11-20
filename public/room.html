@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120h">
+<meta name="build" content="b20261120i">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -76,6 +76,12 @@
   .mem div { display:flex; flex-direction:column; min-width:0; }
   .mem b { font-size:14px; font-weight:800; } .mem.off b { color:#9aa0aa; }
   .mem small { font-size:12px; color:var(--mut); line-height:1.5; }
+  .mem div.grow1 { flex:1; }
+  .mem .acts { display:flex; gap:6px; flex-direction:row; flex:none; }
+  .mem .acts button { font:inherit; font-size:12px; font-weight:800; border:0; border-radius:99px; padding:6px 11px; cursor:pointer; background:#ffffff14; color:var(--fg); }
+  .mem .acts .yes { background:var(--acc); color:#04140a; } .mem .acts .no { background:#ff3b4e26; color:#ff6b78; }
+  .mem.req i { background:#ffd166; box-shadow:0 0 8px #ffd166; }
+  .panel h4 { font-size:12px; color:var(--mut); font-weight:800; margin:12px 0 2px; } .panel h4:first-of-type { margin-top:0; }
   .sound { position:fixed; z-index:13; left:50%; top:50%; transform:translate(-50%,-50%); display:none; font:inherit; font-weight:800; font-size:16px;
            padding:13px 24px; border-radius:99px; border:0; background:var(--acc); color:#04140a; box-shadow:0 6px 30px #000a; cursor:pointer; }
   .sound.show { display:block; }
@@ -179,7 +185,6 @@
 </div>
 
 <div class="panel" id="members">
-  <h3>الأعضاء</h3>
   <div id="memList"></div>
 </div>
 <button class="sound" id="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
@@ -259,6 +264,14 @@ const SKEY = 'wr2_room_' + roomId;
 let room = (() => { try { return JSON.parse(store.get(SKEY)) || null; } catch (e) { return null; } })() ||
   { v: 0, title: store.get('wr2_title_' + roomId) || 'غرفة مشاهدة', movie: null, status: 'stopped', startedAt: 0, base: 0, pausedAt: 0, auto: false };
 const saveRoom = () => store.set(SKEY, JSON.stringify(room));
+// ---- who may be in the room: the owner (whoever made it) lets people in. While the owner is away, the "boss" acts for
+// them: whoever already has the whole movie (the oldest in the room among those), else simply the oldest. The owner
+// takes over again as soon as they're back. Anyone else who opens the link waits in "requests" until let in.
+const hadState = !!store.get(SKEY);
+const approved = (c) => !!c && (c === room.owner || (room.ok || []).includes(c));
+const isBoss = () => !!room.owner && (cid === room.owner || cid === room.boss);
+let waiting = false;   // I asked to come in and nobody has said yes yet
+const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
 
 const idb = (() => {
   let dbp = null;
@@ -409,7 +422,11 @@ async function loadHave() {
 // ---------------- the shared room state (owned by the master) ----------------
 function applyRoom(next, from) {
   const movieChanged = (next.movie && next.movie.id) !== (room.movie && room.movie.id);
+  const oldReq = new Set((room.req || []).map((x) => x.cid));
   room = next; saveRoom();
+  if (!isMaster) for (const p of live()) if (p.id !== MASTER_ID && room.owner && !approved(p.cid)) { peers.delete(p.id); try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} refreshConn(); }
+  if (isBoss()) for (const r of room.req || []) if (!oldReq.has(r.cid)) { toast(`🔔 ${r.name} عايز يدخل الغرفة`); ding(); }
+  setPeerPill();
   $('title').textContent = $('gateTitle').textContent = room.title; document.title = 'STONX · ' + room.title;
   if (movieChanged) {
     for (const [k, u] of urls) if (typeof k === 'number') URL.revokeObjectURL(u);
@@ -428,7 +445,9 @@ function act(action, extra = {}) {  // anyone: request a change
   if (isMaster || !(m && m.ready)) return handleAct({ action, ...extra });
   sendTo(m, { t: 'act', action, ...extra });
 }
-function handleAct(a) {
+function handleAct(a, from) {
+  const who = from ? from.cid : cid;
+  if (['approve', 'reject', 'remove'].includes(a.action)) return door(a, who, from);
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
     if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; delete r.upd; }
@@ -437,6 +456,67 @@ function handleAct(a) {
     if (a.action === 'movie') { r.movie = a.movie; r.status = 'paused'; r.pausedAt = 0; r.auto = false; }
     if (a.action === 'delete') { r.movie = null; r.status = 'stopped'; r.pausedAt = 0; }
   });
+}
+// ---- the door (master only): let someone in, turn them away, or send them back out to the requests
+function door(a, who, from) {
+  const reply = (t) => (from ? sendTo(from, { t: 'note', text: t }) : toast(t));
+  if (!room.owner || !(who === room.owner || who === room.boss)) return reply('الموافقة لصاحب الغرفة بس');
+  const target = typeof a.cid === 'string' ? a.cid : '';
+  const p = [...peers.values()].find((x) => x.cid === target && x.ready);
+  if (a.action === 'approve') {
+    if (live().length + (approved(cid) ? 1 : 0) >= MAX) return reply('الغرفة مليانة (5 أشخاص)');
+    commit((r) => { r.ok = [...new Set([...(r.ok || []), target])]; if (r.no) delete r.no[target]; });
+    if (p && p.pending) {
+      p.pending = false; sendTo(p, { t: 'ok' }); sendTo(p, { t: 'room', room }); toast(`🟢 ${p.name} دخل الغرفة`); remember(p);
+      sendTo(p, haveMsg()); if (lastBufSent) sendTo(p, { t: 'buf', on: true });
+    }
+    selfCheck(); updReq(); roster(); refreshConn(); pickBoss(); pumpWants();
+  }
+  if (a.action === 'reject') {
+    commit((r) => { r.no = { ...(r.no || {}), [target]: now() + 10 * 60000 }; });
+    if (p) { sendTo(p, { t: 'denied' }); setTimeout(() => dropPeer(p), 400); }
+    updReq();
+  }
+  if (a.action === 'remove') {
+    if (target === room.owner) return reply('مينفعش تشيل صاحب الغرفة');
+    commit((r) => { r.ok = (r.ok || []).filter((x) => x !== target); });
+    if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(`${p.name} اتشال من البث`); }
+    selfCheck(); updReq(); roster(); refreshConn(); pickBoss();
+  }
+}
+// people waiting at the door, as the room sees them
+function updReq() {
+  if (!isMaster) return;
+  const req = [...peers.values()].filter((p) => p.pending && p.ctl && p.ctl.open).map((p) => ({ cid: p.cid, name: p.name || 'ضيف' }));
+  if (JSON.stringify(req) !== JSON.stringify(room.req || [])) commit((r) => { r.req = req; });
+}
+// who looks after the door right now
+function pickBoss() {
+  if (!isMaster || !room.owner) return;
+  const n = parts().length, mid = room.movie && room.movie.id;
+  const full = (c, got) => !!room.movie && (c === room.movie.src || (n > 0 && got >= n));
+  const ppl = [{ cid, since: mySince, full: full(cid, have.size) }, ...live().map((p) => ({ cid: p.cid, since: p.since || Infinity, full: full(p.cid, p.mid === mid ? p.have.size : 0) }))]
+    .filter((x) => approved(x.cid));
+  let b = ppl.find((x) => x.cid === room.owner);
+  if (!b) { const pool = ppl.some((x) => x.full) ? ppl.filter((x) => x.full) : ppl; pool.sort((x, y) => x.since - y.since); b = pool[0]; }
+  const boss = b ? b.cid : room.owner;
+  if (room.boss !== boss) commit((r) => { r.boss = boss; });
+}
+setInterval(pickBoss, 2000);
+// the browser holding the room's name has to be someone who's actually let in; otherwise it steps aside
+let handingOff = false;
+function selfCheck() {
+  if (!isMaster || handingOff) return;
+  if (!room.owner) { waiting = true; return; }         // nobody owns this yet: wait for someone who does
+  if (approved(cid)) { waiting = false; return; }
+  if (!live().length && ![...peers.values()].some((p) => p.ready)) { waiting = true; return; }
+  handingOff = true; waiting = true;
+  setTimeout(() => { kill(peer); peers.clear(); isMaster = false; refreshConn(); setTimeout(() => { handingOff = false; connect(); }, 4500); }, 600);
+}
+function goWait() {
+  waiting = true;
+  for (const p of [...peers.values()]) if (p.id !== MASTER_ID) { peers.delete(p.id); try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} }
+  inflight.clear(); refreshConn();
 }
 // both pause while anyone is still loading, and carry on together once ready
 function checkWaiting() {
@@ -460,7 +540,7 @@ function P(id) {
   if (!p) { p = { id, ctl: null, dat: null, cid: '', name: '', ready: false, mid: null, have: new Set(), pend: new Set(), buf: false, rx: null, lastRx: Date.now(), queue: [], serving: false, born: Date.now() }; peers.set(id, p); }
   return p;
 }
-const live = () => [...peers.values()].filter((p) => p.ready && p.ctl && p.ctl.open);
+const live = () => [...peers.values()].filter((p) => p.ready && !p.pending && p.ctl && p.ctl.open);
 const masterPeer = () => peers.get(MASTER_ID);
 function sendTo(p, m) { try { if (p && p.ctl && p.ctl.open) p.ctl.send(m); } catch (e) {} }
 function send(m) { live().forEach((p) => sendTo(p, m)); }          // to everyone
@@ -490,7 +570,21 @@ setInterval(async () => {
   linkType = !any ? '' : relay ? ' · 🔁' : ' · ⚡';
   setPeerPill();
 }, 5000);
-function setPeerPill() { $('memBtn').textContent = `👥 الأعضاء ${live().length + 1}`; renderMembers(); }
+function setPeerPill() {
+  const rq = isBoss() ? (room.req || []).length : 0;
+  $('memBtn').textContent = `👥 الأعضاء ${live().length + 1}` + (rq ? ` · 🔔${rq}` : ''); renderMembers();
+}
+let dingCtx = null;
+function ding() {
+  try {
+    dingCtx = dingCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = dingCtx.createOscillator(), g = dingCtx.createGain(), t = dingCtx.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(880, t); o.frequency.setValueAtTime(1320, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    o.connect(g).connect(dingCtx.destination); o.start(t); o.stop(t + 0.4);
+  } catch (e) {}
+  try { navigator.vibrate && navigator.vibrate(120); } catch (e) {}
+}
 // everyone who has been in this room, so the list can also show who stepped out and since when
 const MKEY = 'wr2_members_' + roomId;
 let known = (() => { try { return JSON.parse(store.get(MKEY)) || {}; } catch (e) { return {}; } })();   // cid -> { name, seen }
@@ -504,15 +598,29 @@ function renderMembers() {
   if (!$('members').classList.contains('show')) return;
   const n = parts().length, mid = room.movie && room.movie.id;
   const what = (c, got) => !room.movie ? '' : c === room.movie.src ? 'صاحب الفيلم 🎬' : got >= n ? 'الفيلم كله عنده ✅' : `وصله ${Math.round((got / n) * 100)}% من الفيلم`;
-  const row = (name, state, on) => {
+  const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = cls; b.onclick = (e) => { e.stopPropagation(); fn(); }; return b; };
+  const row = (name, state, kind, acts) => {
     const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
-    r.className = 'mem' + (on ? '' : ' off'); b.textContent = name; sm.textContent = state; t.append(b, sm); r.append(i, t); return r;
+    r.className = 'mem' + (kind === 'off' ? ' off' : kind === 'req' ? ' req' : ''); t.className = 'grow1';
+    b.textContent = name; sm.textContent = state; t.append(b, sm); r.append(i, t);
+    if (acts && acts.length) { const a = document.createElement('div'); a.className = 'acts'; a.append(...acts); r.append(a); }
+    return r;
   };
-  const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]), list = [];
-  list.push(row((store.get('wr_name') || 'ضيف') + ' (انت)', ['موجود في الغرفة', what(cid, have.size)].filter(Boolean).join(' · '), true));
-  for (const p of on) list.push(row(p.name || 'ضيف', ['موجود في الغرفة' + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), true));
-  Object.entries(known).filter(([c]) => !here.has(c)).sort((a, b) => b[1].seen - a[1].seen).slice(0, 8)
-    .forEach(([, k]) => list.push(row(k.name, `مش موجود دلوقتي · خرج ${ago(k.seen)}`, false)));
+  const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '');
+  const role = (c) => (c === room.owner ? 'صاحب الغرفة' : c === room.boss ? 'المسؤول لحد ما صاحب الغرفة يرجع' : '');
+  const boss = isBoss(), list = [], h = (t) => { const x = document.createElement('h4'); x.textContent = t; return x; };
+  const reqs = boss ? (room.req || []) : [];
+  if (reqs.length) {
+    list.push(h(`طلبات الدخول (${reqs.length})`));
+    for (const q of reqs) list.push(row(q.name, 'عايز يدخل الغرفة', 'req', [btn('✅ قبول', 'yes', () => act('approve', { cid: q.cid })), btn('❌', 'no', () => act('reject', { cid: q.cid }))]));
+  }
+  const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]);
+  list.push(h('في البث'));
+  list.push(row((store.get('wr_name') || 'ضيف') + ' (انت)' + tag(cid), [role(cid), what(cid, have.size)].filter(Boolean).join(' · ') || 'موجود في الغرفة', 'on'));
+  for (const p of on) list.push(row((p.name || 'ضيف') + tag(p.cid), [role(p.cid) || 'موجود في الغرفة' + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), 'on',
+    boss && p.cid !== room.owner ? [btn('شيله', 'no', () => { if (confirm(`تشيل ${p.name || 'ضيف'} من البث؟ هيرجع لطلبات الدخول.`)) act('remove', { cid: p.cid }); })] : null));
+  const gone = Object.entries(known).filter(([c]) => !here.has(c) && !reqs.some((q) => q.cid === c)).sort((a, b) => b[1].seen - a[1].seen).slice(0, 8);
+  if (gone.length) { list.push(h('مش موجودين')); gone.forEach(([c, k]) => list.push(row(k.name + tag(c), `خرج ${ago(k.seen)}`, 'off'))); }
   $('memList').replaceChildren(...list);
 }
 $('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); $('members').classList.toggle('show'); renderMembers(); };
@@ -521,7 +629,7 @@ function wireCtl(c) {
   const p = P(c.peer);
   if (p.ctl && p.ctl !== c) { const old = p.ctl; p.ctl = null; try { old.close(); } catch (e) {} }
   p.ctl = c;
-  const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || 'ضيف', room, pos: position() });
+  const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || 'ضيف', room: isMaster ? null : room, pos: position(), since: mySince });
   c.on('open', hello);
   c.on('data', (m) => onCtl(m, p, c));
   c.on('close', () => { if (p.ctl === c && peers.get(p.id) === p) dropPeer(p); });
@@ -547,19 +655,23 @@ function dropPeer(p) {
   peers.delete(p.id);
   try { p.dat && p.dat.close(); } catch (e) {}
   for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i);
-  if (p.ready) { toast(`${p.name || 'ضيف'} خرج من الغرفة`); remember(p); }
+  if (p.ready && !p.pending) { toast(`${p.name || 'ضيف'} خرج من الغرفة`); remember(p); }
+  if (p.pending) updReq();
   typers.delete(p.id); drawTyping();
   refreshConn(); roster(); checkWaiting(); pumpWants();
   if (!isMaster && p.id === MASTER_ID) setTimeout(connect, 1500);   // the master left: someone takes over
 }
+// PeerJS fires 'disconnected' while destroying, and reconnecting then would quietly keep the room's name taken
+function kill(pp) { if (!pp) return; pp._dead = true; try { pp.destroy(); } catch (e) {} }
 async function connect() {
   if (stopped) return;
-  if (peer) try { peer.destroy(); } catch (e) {}
+  if (peer) kill(peer);
   const old = [...peers.values()]; peers.clear(); inflight.clear();
   old.forEach((p) => { try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} });
   refreshConn();
-  // try to own the room (master); if someone already does, join them
-  const asMaster = await new Promise((resolve) => {
+  // try to own the room (master); if someone already does, join them. Someone who isn't let in never holds the room.
+  const mayHost = !room.owner || approved(cid);
+  const asMaster = !mayHost ? null : await new Promise((resolve) => {
     const p = new Peer(MASTER_ID, peerOpts());
     p.on('open', () => resolve(p));
     p.on('error', (e) => { if (e.type === 'unavailable-id') { p.destroy(); resolve(null); } else if (!p.open) { p.destroy(); resolve('err'); } });
@@ -567,17 +679,18 @@ async function connect() {
   if (asMaster === 'err') { $('memBtn').textContent = '⚠️ بنحاول نتصل…'; return setTimeout(connect, 4000); }
   if (asMaster) {
     peer = asMaster; isMaster = true;
+    if (!room.owner && hadState) { room.owner = cid; room.ok = [...new Set([...(room.ok || []), ...Object.keys(known)])]; saveRoom(); }   // a room from before owners existed
     if (offset && room.startedAt) { room.startedAt -= offset; saveRoom(); }  // re-express times on my own clock
     offset = 0;
     peer.on('connection', onConn);
-    peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
-    setPeerPill();
+    const mine = peer; peer.on('disconnected', () => { if (!mine._dead) try { mine.reconnect(); } catch (e) {} });
+    setPeerPill(); selfCheck();
     return;
   }
   isMaster = false;
   const me = peer = new Peer(undefined, peerOpts());
   peer.on('connection', onConn);
-  peer.on('disconnected', () => { try { me.reconnect(); } catch (e) {} });
+  peer.on('disconnected', () => { if (!me._dead) try { me.reconnect(); } catch (e) {} });
   peer.on('open', () => {
     linkTo(MASTER_ID);
     setTimeout(() => { const m = masterPeer(); if (peer === me && !stopped && !(m && m.ready)) connect(); }, 12000);
@@ -611,23 +724,32 @@ setInterval(() => {
 function onCtl(m, p, c) {
   if (!m || typeof m !== 'object') return;
   p.lastMsg = Date.now();
-  if (m.t === 'full') { stopped = true; showFatal('الغرفة مليانة', 'الغرفة تكفي 5 أشخاص بس.'); try { peer.destroy(); } catch (e) {} return; }
+  if (m.t === 'full') { stopped = true; showFatal('الغرفة مليانة', 'الغرفة تكفي 5 أشخاص بس.'); kill(peer); return; }
+  if (m.t === 'denied') { stopped = true; waiting = false; showFatal('مش هتقدر تدخل دلوقتي', 'صاحب الغرفة رفض طلب الدخول.'); kill(peer); return; }
   if (m.t !== 'hello' && (c !== p.ctl || !p.ready)) return;
+  if (p.pending) { if (m.t === 'bye') dropPeer(p); return; }   // someone still waiting at the door can't do anything else
   if (m.t === 'ping') return sendTo(p, { t: 'pong', t0: m.t0, t1: Date.now() });
   if (m.t === 'pong') { if (pongWait && p.id === MASTER_ID) { const f = pongWait; pongWait = null; f(m); } return; }
   if (m.t === 'hello') {
     // the same browser coming back under a new id: forget the old copy of it
     for (const x of [...peers.values()]) if (x !== p && x.cid === m.cid) { peers.delete(x.id); try { x.ctl && x.ctl.close(); } catch (e) {} try { x.dat && x.dat.close(); } catch (e) {} }
-    if (isMaster && live().filter((x) => x !== p).length >= MAX - 1) { c.send({ t: 'full' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
-    const fresh = !p.ready; p.cid = m.cid; p.name = String(m.name || 'ضيف').slice(0, 24); p.ready = true; refreshConn();
+    if (isMaster && live().filter((x) => x !== p).length >= MAX - 1 && approved(m.cid)) { c.send({ t: 'full' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
+    if (isMaster && m.room && typeof m.room === 'object' && ((approved(m.cid) && m.room.v > room.v) || (!room.owner && m.room.owner && (m.room.owner === m.cid || (m.room.ok || []).includes(m.cid))))) {
+      // a freshly started master adopts a guest's memory of the room if it is newer (or if the room had no owner yet)
+      const r = { ...m.room }; if (r.status === 'playing') { r.status = 'paused'; r.pausedAt = Math.max(0, +m.pos || 0); r.auto = false; } applyRoom(r);
+    }
+    p.cid = m.cid; p.name = String(m.name || 'ضيف').slice(0, 24); p.since = +m.since || Date.now();
+    if (!isMaster && p.id !== MASTER_ID && !approved(m.cid)) { peers.delete(p.id); try { c.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} return; }
+    if (isMaster) {
+      const no = (room.no || {})[m.cid];
+      if (no && no > now()) { c.send({ t: 'denied' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
+      if (!approved(m.cid)) { p.ready = true; p.pending = true; c.send({ t: 'wait' }); updReq(); selfCheck(); return; }
+      p.pending = false;
+    }
+    const fresh = !p.ready; p.ready = true; refreshConn();
     if (fresh) toast(`🟢 ${p.name} معاك في الغرفة`);
     remember(p);
-    if (isMaster) {
-      // a freshly started master adopts a guest's memory of the room if it is newer
-      if (m.room && m.room.v > room.v) { const r = { ...m.room }; if (r.status === 'playing') { r.status = 'paused'; r.pausedAt = Math.max(0, +m.pos || 0); r.auto = false; } applyRoom(r); }
-      commit(() => {});
-      roster();
-    } else if (p.id === MASTER_ID) syncClock();
+    if (isMaster) { selfCheck(); commit(() => {}); roster(); pickBoss(); } else if (p.id === MASTER_ID) syncClock();
     sendTo(p, haveMsg());
     if (prepInfo) sendTo(p, { t: 'prep', ...prepInfo });
     if (lastBufSent) sendTo(p, { t: 'buf', on: true });
@@ -636,8 +758,11 @@ function onCtl(m, p, c) {
   }
   // the master tells everyone who's here; of each pair, the one with the smaller id makes the call (so nobody calls twice)
   if (m.t === 'peers') { if (!isMaster && Array.isArray(m.ids) && peer) m.ids.forEach((id) => typeof id === 'string' && peer.id < id && linkTo(id)); return; }
-  if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { applyRoom(m.room); pumpWants(); } return; }
-  if (m.t === 'act') { if (isMaster) handleAct(m); return; }
+  if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { waiting = false; applyRoom(m.room); pumpWants(); } return; }
+  if (m.t === 'wait') { if (p.id === MASTER_ID && !isMaster) goWait(); return; }
+  if (m.t === 'ok') { if (p.id === MASTER_ID && waiting) { waiting = false; toast('✅ اتقبلت — أهلاً بيك في الغرفة'); } return; }
+  if (m.t === 'note') { if (typeof m.text === 'string') toast(m.text.slice(0, 80)); return; }
+  if (m.t === 'act') { if (isMaster) handleAct(m, p); return; }
   if (m.t === 'bye') { dropPeer(p); return; }
   if (m.t === 'update') { onUpdateMsg(m); return; }
   if (m.t === 'buf') { p.buf = !!m.on; checkWaiting(); return; }
@@ -720,7 +845,7 @@ setInterval(() => {
 // Ask for what we need soonest. Parts someone else already holds come from them, so the phone that picked the
 // movie mostly sends each part once and the others pass it along between themselves.
 function pumpWants() {
-  if (!room.movie || iAmSource()) return;
+  if (!room.movie || iAmSource() || waiting) return;
   const mid = room.movie.id, n = parts().length, c = currentIndex(), PER = 2;
   const isSrc = (p) => p.cid === room.movie.src;
   const from = live().filter((p) => p.mid === mid && p.dat && p.dat.open).sort((a, b) => isSrc(a) - isSrc(b));
@@ -751,7 +876,7 @@ setInterval(pumpWants, 2000);
 // a link that never finished opening is thrown away, so the next roster can try it again.
 setInterval(() => {
   const t = Date.now();
-  for (const p of live()) if (t - (p.lastMsg || t) > 25000) dropPeer(p);
+  for (const p of [...peers.values()]) if (p.ready && p.ctl && p.ctl.open && t - (p.lastMsg || t) > 25000) dropPeer(p);
   for (const p of [...peers.values()]) if (!p.ready && t - p.born > 10000 && p.id !== MASTER_ID) { peers.delete(p.id); try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} }
 }, 3000);
 function roster() { if (isMaster) live().forEach((p) => sendTo(p, { t: 'peers', ids: live().filter((x) => x !== p).map((x) => x.id) })); }
@@ -863,6 +988,10 @@ function countdown(sec) {
 
 function tick() {
   if (!joined) return;
+  if (waiting) {
+    vids.forEach((v) => v.pause()); countdown(0); $('buffer').classList.remove('show');
+    return message('⏳ مستني الموافقة', room.owner || connected ? 'طلبت تدخل الغرفة. أول ما صاحب الغرفة يوافق هتدخل على طول.' : 'الغرفة فاضية دلوقتي. أول ما صاحبها أو حد من أعضائها يدخل، هيشوف طلبك.', '<div class="spin"></div>');
+  }
   const T = total(), pos = position(), playing = room.status === 'playing';
   $('live').classList.toggle('off', !playing);
   $('liveTxt').textContent = playing ? 'شغّال' : room.auto ? 'بيحمّل…' : room.status === 'paused' ? 'متوقف' : 'مستني';
@@ -1210,6 +1339,7 @@ async function join() {
   joined = true; muted = false; show(0);
   keepAwake(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
   $('gate').style.display = 'none';
+  if (!room.owner && store.get('wr2_own_' + roomId)) { room.owner = cid; room.ok = [cid]; saveRoom(); }   // I made this room
   await loadHave();
   connect();
 }
@@ -1219,7 +1349,7 @@ try { if (sessionStorage.getItem('wr_autojoin') && store.get('wr_name')) { sessi
 if (!roomId) showFatal('رابط غلط', 'افتح رابط الغرفة اللي اتبعتلك.');
 setInterval(tick, 300);
 setPeerPill();
-window.__wr = { peers, get name() { return store.get('wr_name'); }, checkUpdate, get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
+window.__wr = { get peerId() { return peer && peer.id; }, get peerOpen() { return !!(peer && peer.open && !peer.destroyed); }, get waiting() { return waiting; }, peers, get name() { return store.get('wr_name'); }, checkUpdate, get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
 </script>
 </body>
 </html>
