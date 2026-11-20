@@ -3,6 +3,7 @@
 (function () {
   const D = {
     ar: {
+      noMembers: 'مفيش أعضاء تانيين في الغرفة دلوقتي', hashOwnerOnly: '# دي لصاحب الغرفة 👑 بس',
       onlyOwnerMute: 'دي لصاحب الغرفة بس', mutedYou: '🔇 صاحب الغرفة وقف عندك التفاعل والتعليقات', unmutedYou: '💬 صاحب الغرفة رجّعلك التفاعل والتعليقات',
       mutedX: '🔇 وقفت التفاعل والتعليقات عند {n}', unmutedX: '💬 رجّعت التفاعل والتعليقات لـ{n}', mutedNow: '🔇 التفاعل والتعليقات متوقفين عندك دلوقتي',
       tapMute: 'وقّف 🔇', tapUnmute: 'رجّع 💬', muteHead: 'التفاعل والتعليقات',
@@ -56,6 +57,7 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      noMembers: 'Nobody else is in the room right now', hashOwnerOnly: '# is for the room owner 👑 only',
       onlyOwnerMute: 'Only the room owner can do this', mutedYou: '🔇 The room owner turned off your reactions and comments', unmutedYou: '💬 The room owner turned your reactions and comments back on',
       mutedX: '🔇 Turned off reactions and comments for {n}', unmutedX: '💬 Turned reactions and comments back on for {n}', mutedNow: '🔇 Your reactions and comments are off right now',
       tapMute: 'Turn off 🔇', tapUnmute: 'Turn on 💬', muteHead: 'Reactions and comments',
@@ -109,6 +111,7 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      noMembers: 'Şu an odada başka kimse yok', hashOwnerOnly: '# yalnızca oda sahibi 👑 içindir',
       onlyOwnerMute: 'Bunu yalnızca oda sahibi yapabilir', mutedYou: '🔇 Oda sahibi tepki ve yorumlarını kapattı', unmutedYou: '💬 Oda sahibi tepki ve yorumlarını yeniden açtı',
       mutedX: '🔇 {n} için tepki ve yorumlar kapatıldı', unmutedX: '💬 {n} için tepki ve yorumlar yeniden açıldı', mutedNow: '🔇 Tepki ve yorumların şu an kapalı',
       tapMute: 'Kapat 🔇', tapUnmute: 'Aç 💬', muteHead: 'Tepki ve yorumlar',
@@ -162,6 +165,7 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      noMembers: 'الان کس دیگری در اتاق نیست', hashOwnerOnly: '# فقط برای صاحب اتاق 👑 است',
       onlyOwnerMute: 'این کار فقط از صاحب اتاق برمی‌آید', mutedYou: '🔇 صاحب اتاق واکنش‌ها و نظرهایت را بست', unmutedYou: '💬 صاحب اتاق واکنش‌ها و نظرهایت را دوباره باز کرد',
       mutedX: '🔇 واکنش‌ها و نظرهای {n} بسته شد', unmutedX: '💬 واکنش‌ها و نظرهای {n} دوباره باز شد', mutedNow: '🔇 واکنش‌ها و نظرهایت فعلاً بسته است',
       tapMute: 'بستن 🔇', tapUnmute: 'باز کردن 💬', muteHead: 'واکنش‌ها و نظرها',
@@ -215,6 +219,7 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      noMembers: 'Personne d’autre dans le salon pour l’instant', hashOwnerOnly: '# est réservé au propriétaire du salon 👑',
       onlyOwnerMute: 'Seul le propriétaire du salon peut faire ça', mutedYou: '🔇 Le propriétaire a coupé tes réactions et commentaires', unmutedYou: '💬 Le propriétaire a réactivé tes réactions et commentaires',
       mutedX: '🔇 Réactions et commentaires coupés pour {n}', unmutedX: '💬 Réactions et commentaires réactivés pour {n}', mutedNow: '🔇 Tes réactions et commentaires sont coupés pour l’instant',
       tapMute: 'Couper 🔇', tapUnmute: 'Réactiver 💬', muteHead: 'Réactions et commentaires',
@@ -268,6 +273,7 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      noMembers: 'Сейчас в комнате больше никого нет', hashOwnerOnly: '# только для владельца комнаты 👑',
       onlyOwnerMute: 'Это может только владелец комнаты', mutedYou: '🔇 Владелец комнаты отключил тебе реакции и комментарии', unmutedYou: '💬 Владелец комнаты снова включил тебе реакции и комментарии',
       mutedX: '🔇 Реакции и комментарии отключены для {n}', unmutedX: '💬 Реакции и комментарии снова включены для {n}', mutedNow: '🔇 Твои реакции и комментарии сейчас отключены',
       tapMute: 'Отключить 🔇', tapUnmute: 'Включить 💬', muteHead: 'Реакции и комментарии',
