@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120s">
+<meta name="build" content="b20261120t">
 <title>STONX · غرفة مشاهدة</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="STONX Watch Room">
@@ -21,6 +21,7 @@
 <link rel="icon" href="/icon-192.webp">
 <link rel="manifest" href="/manifest.json">
 <script src="/i18n.js"></script>
+<script src="/emoji.js"></script>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -1322,7 +1323,8 @@ async function recapCanvas() {
   const X0 = rtl ? W - 80 : 80, line = (txt, y, font, color) => { x.font = font; x.fillStyle = color; x.fillText(txt, X0, y, W - 160); };
   try { const im = new Image(); im.src = '/icon-192.webp'; await im.decode(); x.drawImage(im, rtl ? 80 : W - 80 - 120, 70, 120, 120); } catch (e) {}
   line('STONX · WATCH TOGETHER', 120, F(800, 26), '#8a909c');
-  line(t('recapTitle'), 190, F(800, 44), '#38e07b');
+  const noEmo = (str) => { let o = String(str); for (const e of (window.EMO ? window.EMO.split(o) : [])) o = o.replace(e, ''); return o.replace(/\s+/g, ' ').trim(); };
+  line(noEmo(t('recapTitle')), 190, F(800, 44), '#38e07b');
   let nm = st.name || (room.movie && room.movie.name) || ''; x.font = F(800, 72); while (nm.length > 4 && x.measureText(nm).width > W - 160) nm = nm.slice(0, -2);
   if (nm !== (st.name || '')) nm += '…';
   line(nm, 300, F(800, 72), '#ffffff');
@@ -1336,11 +1338,14 @@ async function recapCanvas() {
     [best >= 0 && T ? fmt(((best + 0.5) / BINS) * T) : '—', t('recapBest')],
     [topW ? topW.n : '—', t('recapTop')],
   ];
+  let emoImg = null; const eu = topE && window.EMO && window.EMO.url(topE[0]);
+  if (eu) try { emoImg = new Image(); emoImg.src = eu; await emoImg.decode(); } catch (e) { emoImg = null; }
   tiles.forEach(([big, small], k) => {
     const cw = (W - 160 - 30) / 2, ch = 190, col = k % 2, row = Math.floor(k / 2);
     const left = rtl ? W - 80 - cw - col * (cw + 30) : 80 + col * (cw + 30), top = 370 + row * (ch + 30);
     x.fillStyle = '#ffffff10'; x.beginPath(); x.roundRect(left, top, cw, ch, 28); x.fill();
     const tx = rtl ? left + cw - 36 : left + 36;
+    if (k === 1 && emoImg) { x.drawImage(emoImg, rtl ? tx - 84 : tx, top + 26, 84, 84); x.font = F(600, 30); x.fillStyle = '#9aa0aa'; x.fillText(small, tx, top + 152); return; }
     let b = big; x.font = F(800, 64); while (b.length > 2 && x.measureText(b).width > cw - 72) b = b.slice(0, -2);
     x.fillStyle = '#fff'; x.fillText(b !== big ? b + '…' : b, tx, top + 100);
     x.font = F(600, 30); x.fillStyle = '#9aa0aa'; x.fillText(small, tx, top + 152);

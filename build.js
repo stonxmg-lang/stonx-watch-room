@@ -25,5 +25,9 @@ fromGitHub().then(() => {
   copy(path.join(__dirname, 'node_modules/@ffmpeg/ffmpeg/dist/esm'), path.join(__dirname, 'public/vendor/ffmpeg/ffmpeg'));
   copy(path.join(__dirname, 'node_modules/@ffmpeg/core/dist/esm'), path.join(__dirname, 'public/vendor/ffmpeg/core'));
   copy(path.join(__dirname, 'node_modules/peerjs/dist/peerjs.min.js'), path.join(__dirname, 'public/vendor/peerjs.min.js'));
+  // one emoji look on every phone: Google's open-source (Apache-2.0) emoji images, served from our own site
+  const emoSrc = path.join(__dirname, 'node_modules/emoji-datasource-google/img/google/64'), emoDst = path.join(__dirname, 'public/vendor/emoji/g16');
+  copy(emoSrc, emoDst);
+  fs.writeFileSync(path.join(emoDst, 'list.txt'), fs.readdirSync(emoSrc).filter((f) => f.endsWith('.png')).map((f) => f.slice(0, -4)).join(','));
   console.log('vendor copied');
 }).catch((e) => { console.error(e); process.exit(1); });

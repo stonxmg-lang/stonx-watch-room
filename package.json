@@ -2,11 +2,16 @@
   "name": "stonx-watch-room",
   "private": true,
   "version": "3.0.0",
-  "engines": { "node": "22.x" },
-  "scripts": { "build": "node build.js" },
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "node build.js"
+  },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
     "@ffmpeg/ffmpeg": "0.12.15",
-    "peerjs": "1.5.5"
+    "peerjs": "1.5.5",
+    "emoji-datasource-google": "16.0.0"
   }
 }
