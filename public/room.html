@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120q">
+<meta name="build" content="b20261120r">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -92,13 +92,18 @@
   .sound { position:fixed; z-index:13; left:50%; top:50%; transform:translate(-50%,-50%); display:none; font:inherit; font-weight:800; font-size:16px;
            padding:13px 24px; border-radius:99px; border:0; background:var(--acc); color:#04140a; box-shadow:0 6px 30px #000a; cursor:pointer; }
   .sound.show { display:block; }
-  .menu button { display:block; width:100%; text-align:start; background:#1a1e26; border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-bottom:8px; cursor:pointer; font-weight:600; }
-  .menu button.dan { color:var(--red); }
-  .menu button.tog { display:flex; align-items:center; gap:10px; } .menu button.tog span { flex:1; }
+  /* settings: same compact look as the members list — small sections, one-line rows with an icon tile */
+  #menu { width:min(290px,calc(100vw - 20px)); padding:8px; max-height:72vh; }
+  .mi { display:flex; align-items:center; gap:10px; width:100%; background:none; border:0; border-radius:10px; padding:7px 6px; cursor:pointer;
+        font:inherit; font-size:13.5px; font-weight:700; color:var(--fg); text-align:start; }
+  .mi:active, .mi:hover { background:#ffffff0d; }
+  .mi b { width:30px; height:30px; border-radius:9px; background:#ffffff10; display:grid; place-items:center; font-size:15px; flex:none; }
+  .mi span { flex:1; min-width:0; } .mi.dan { color:#ff6b78; } .mi.dan b { background:#ff3b4e1c; }
   .sw { position:relative; width:38px; height:22px; border-radius:99px; background:#3a3f4a; flex:none; transition:background .2s; }
   .sw::after { content:''; position:absolute; top:3px; inset-inline-start:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:inset-inline-start .2s; }
   .tog.on .sw { background:var(--acc); } .tog.on .sw::after { inset-inline-start:19px; }
-  .menu .hint { font-size:12px; color:var(--mut); line-height:1.7; margin-top:4px; }
+  .menu .hint { font-size:11px; color:var(--mut); line-height:1.6; padding:6px 6px 2px; }
+  .bar.locked #playBtn, .bar.locked #back10, .bar.locked #fwd10, .bar.locked .seekwrap { opacity:.35; }
 
   .up { position:fixed; z-index:14; bottom:max(96px,calc(env(safe-area-inset-bottom) + 90px)); left:50%; transform:translateX(-50%); width:min(420px,calc(100vw - 20px));
         background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:14px 16px; display:none; }
@@ -143,16 +148,23 @@
   .chatbar button svg { width:24px; height:24px; fill:currentColor; }
   [dir=rtl] .chatbar button svg { transform:scaleX(-1); }
   .chatbar button:active { filter:brightness(.9); }
-  body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
+  body:has(.chatbar.show) .chatlog { bottom:calc(max(160px,calc(env(safe-area-inset-bottom) + 154px)) + var(--ab,0px)); }
   /* @mentions: picked people show as small chips in the chat bar; a message with chips goes to them only */
-  .chatbar .chips { position:absolute; bottom:calc(100% + 8px); inset-inline:0; display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; align-items:center; }
-  body:has(.chips:not(:empty)) .mention { bottom:max(196px,calc(env(safe-area-inset-bottom) + 190px)); }
-  body:has(.chatbar.show .chips:not(:empty)) .chatlog { bottom:max(200px,calc(env(safe-area-inset-bottom) + 194px)); }
+  .chatbar .above { position:absolute; bottom:calc(100% + 8px); inset-inline:0; display:flex; flex-direction:column; gap:6px; }
+  .chatbar .chips { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; align-items:center; }
+  /* replying: a small quote of the message above the input, WhatsApp style */
+  .rq { display:none; align-items:center; gap:8px; background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-inline-start:3px solid var(--acc);
+        border-radius:12px; padding:6px 10px; font-size:12.5px; max-width:420px; }
+  .rq.show { display:flex; } .rq .tx { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#cfd3da; }
+  .rq .tx b { color:#5ff09a; margin-inline-end:5px; } .rq .x { flex:none; cursor:pointer; color:var(--mut); font:800 14px/1 system-ui,sans-serif; padding:4px; }
+  .chatlog div { pointer-events:auto; cursor:pointer; } .chatlog .typing { pointer-events:none; }
+  .chatlog .q { display:block; font-size:12px; font-weight:600; color:#cfd3da; opacity:.85; border-inline-start:2px solid #5ff09a; padding-inline-start:6px; margin-bottom:2px;
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   .chatbar .chips:empty { display:none; }
   .chip { flex:none; display:flex; align-items:center; gap:4px; background:#ffd16626; color:#ffd166; font-weight:800; font-size:13px;
           padding:6px 10px; border-radius:99px; white-space:nowrap; cursor:pointer; }
   .chip::after { content:'✕'; font-size:11px; opacity:.7; }
-  .mention { position:fixed; z-index:17; inset-inline:10px; bottom:max(156px,calc(env(safe-area-inset-bottom) + 150px)); max-width:360px; display:none;
+  .mention { position:fixed; z-index:17; inset-inline:10px; bottom:calc(max(156px,calc(env(safe-area-inset-bottom) + 150px)) + var(--ab,0px)); max-width:360px; display:none;
              background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:6px; max-height:40vh; overflow:auto; }
   .mention.show { display:block; }
   .mention div { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; font-weight:800; cursor:pointer; }
@@ -206,13 +218,16 @@
 </div>
 <button class="sound" id="soundBtn" data-i18n="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
 <div class="panel menu" id="menu">
-  <button id="shareBtn" data-i18n="share">🔗 شارك رابط الغرفة</button>
-  <h3 style="margin-top:6px" data-i18n="members">الأعضاء</h3>
-  <button id="namesBtn" class="tog"><span data-i18n="showNames">الأعضاء شايفين بعض</span><i class="sw"></i></button>
-  <h3 style="margin-top:6px" data-i18n="movie">الفيلم</h3>
-  <button id="pickBtn" data-i18n="pick">🎬 اختار فيلم من جهازي</button>
-  <button class="dan" id="deleteBtn" data-i18n="del">🗑️ امسح الفيلم</button>
-  <p class="hint" data-i18n="hint">الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم وصل للكل».</p>
+  <button class="mi" id="shareBtn"><b>🔗</b><span data-i18n="shareS">شارك رابط الغرفة</span></button>
+  <div class="sec" data-i18n="members">الأعضاء</div>
+  <button class="mi tog" id="namesBtn"><b>👥</b><span data-i18n="showNames">الأعضاء شايفين أسامي بعض</span><i class="sw"></i></button>
+  <div class="sec" data-i18n="setPlay">التشغيل والتفاعل</div>
+  <button class="mi tog" id="ctlBtn"><b>🎮</b><span data-i18n="allCtl">الكل يتحكم في التشغيل</span><i class="sw"></i></button>
+  <button class="mi tog" id="emoBtn"><b>😊</b><span data-i18n="anyEmoji">الكل يستخدم أي إيموجي</span><i class="sw"></i></button>
+  <div class="sec" data-i18n="movie">الفيلم</div>
+  <button class="mi" id="pickBtn"><b>🎬</b><span data-i18n="pickS">اختار فيلم من جهازي</span></button>
+  <button class="mi dan" id="deleteBtn"><b>🗑️</b><span data-i18n="delS">امسح الفيلم</span></button>
+  <p class="hint" data-i18n="hintS"></p>
 </div>
 <input type="file" id="file" accept="video/*,.mkv" hidden>
 
@@ -252,7 +267,7 @@
 <div class="chatlog" id="chatlog"><div class="typing" id="typing"></div></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
 <div class="mention" id="mention"></div>
-<form class="chatbar" id="chatbar" autocomplete="off"><div class="chips" id="chips"></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" data-i18n-ph="chatPh" enterkeyhint="send"><button type="submit" aria-label="إرسال" data-i18n-aria="aSend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
+<form class="chatbar" id="chatbar" autocomplete="off"><div class="above" id="above"><div class="rq" id="rq"></div><div class="chips" id="chips"></div></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" data-i18n-ph="chatPh" enterkeyhint="send"><button type="submit" aria-label="إرسال" data-i18n-aria="aSend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
 
 <script src="/vendor/peerjs.min.js"></script>
 <script type="module">
@@ -298,6 +313,11 @@ const noUntil = (c) => { const x = (room.no || {})[c]; return !x ? 0 : typeof x 
 // the owner can hide who's who from regular members: they see a count, plain public chat, no names, no @
 const namesHidden = () => !!room.hideNames && !canManage();
 const shown = (c, name) => (namesHidden() && c !== cid && c !== room.owner ? t('member') : name || t('guest'));
+// playback can be locked to the owner, the stand-in, and whoever the owner hands control to with £
+const hasCtl = (c) => (room.ctl || []).includes(c);
+const canCtl = (c) => !room.lockCtl || !room.owner || c === room.owner || c === room.boss || hasCtl(c);
+// the owner can limit reactions to their own emoji set
+const emoSet = () => (room.emo && cid !== room.owner ? room.emo : null);
 const isMuted = (c) => !!c && (room.mute || []).includes(c);   // the owner switched off this person's reactions and comments
 let waiting = false;   // I asked to come in and nobody has said yes yet
 const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
@@ -451,9 +471,14 @@ async function loadHave() {
 // ---------------- the shared room state (owned by the master) ----------------
 function applyRoom(next, from) {
   const movieChanged = (next.movie && next.movie.id) !== (room.movie && room.movie.id);
-  const oldReq = new Set((room.req || []).map((x) => x.cid)), wasMuted = isMuted(cid), wasHidden = !!room.hideNames;
+  const oldReq = new Set((room.req || []).map((x) => x.cid)), wasMuted = isMuted(cid), wasHidden = !!room.hideNames, wasCtl = canCtl(cid), wasLock = !!room.lockCtl, wasEmo = JSON.stringify(emoSet());
   room = next; saveRoom();
   if (!!room.hideNames !== wasHidden && !canManage()) toast(t(room.hideNames ? 'namesHiddenNow' : 'namesShownNow'));
+  if (!canManage() && cid !== room.owner) {
+    if (!!room.lockCtl !== wasLock) toast(t(room.lockCtl ? (canCtl(cid) ? 'ctlGiven' : 'ctlLockedNow') : 'ctlOpenNow'));
+    else if (room.lockCtl && canCtl(cid) !== wasCtl) toast(t(canCtl(cid) ? 'ctlGiven' : 'ctlTaken'));
+  }
+  if (JSON.stringify(emoSet()) !== wasEmo) { if (cid !== room.owner) toast(t(emoSet() ? 'emoLockedNow' : 'emoOpenNow')); try { renderTray(); } catch (e) {} }
   if (isMuted(cid) !== wasMuted) { toast(t(isMuted(cid) ? 'mutedYou' : 'unmutedYou')); if (isMuted(cid)) muteClose(); }
   document.body.classList.toggle('muted-me', isMuted(cid));
   for (const p of live()) if (isMuted(p.cid)) typers.delete(p.id);
@@ -480,8 +505,10 @@ function act(action, extra = {}) {  // anyone: request a change
 }
 function handleAct(a, from) {
   const who = from ? from.cid : cid;
-  if (['approve', 'reject', 'remove', 'mute', 'unmute'].includes(a.action)) return door(a, who, from);
-  if ((a.action === 'movie' || a.action === 'delete' || a.action === 'names') && room.owner && who !== room.owner && who !== room.boss)
+  if (['approve', 'reject', 'remove', 'mute', 'unmute', 'ctlOn', 'ctlOff'].includes(a.action)) return door(a, who, from);
+  if (['play', 'pause', 'seek'].includes(a.action) && !(a.auto && !from) && !canCtl(who))
+    return from ? sendTo(from, { t: 'note', key: 'ctlLocked', text: t('ctlLocked') }) : toast(t('ctlLocked'));
+  if (['movie', 'delete', 'names', 'ctl', 'emo'].includes(a.action) && room.owner && who !== room.owner && who !== room.boss)
     return from ? sendTo(from, { t: 'note', key: 'onlyMgr', text: t('onlyMgr') }) : toast(t('onlyMgr'));
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
@@ -489,9 +516,10 @@ function handleAct(a, from) {
     if (a.action === 'pause') { r.status = 'paused'; r.pausedAt = pos; r.auto = !!a.auto; if (!a.auto) delete r.upd; }
     if (a.action === 'seek') { const to = Math.min(Math.max(+a.to || 0, 0), T); if (r.status === 'playing') { r.base = to; r.startedAt = now() + 800; } else { r.status = 'paused'; r.pausedAt = to; } }
     if (a.action === 'movie') { r.movie = a.movie; r.status = 'paused'; r.pausedAt = 0; r.auto = false; }
-    if (a.action === 'names') r.hideNames = !a.show;
     if (a.action === 'delete') { r.movie = null; r.status = 'stopped'; r.pausedAt = 0; }
     if (a.action === 'names') r.hideNames = !a.show;
+    if (a.action === 'ctl') r.lockCtl = !a.all;
+    if (a.action === 'emo') r.emo = a.any ? null : (Array.isArray(a.list) ? a.list.filter(isEmoji).slice(0, 30) : null);
   });
 }
 // ---- the door (master only): let someone in, turn them away, or send them back out to the requests
@@ -519,6 +547,11 @@ function door(a, who, from) {
     commit((r) => { r.ok = (r.ok || []).filter((x) => x !== target); });
     if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(t('removed', { n: shown(p.cid, p.name) })); }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss();
+  }
+  if (a.action === 'ctlOn' || a.action === 'ctlOff') {
+    if (who !== room.owner) return reply('onlyOwnerMute');
+    if (!target || target === room.owner) return;
+    commit((r) => { const m = new Set(r.ctl || []); if (a.action === 'ctlOn') m.add(target); else m.delete(target); r.ctl = [...m]; });
   }
   if (a.action === 'mute' || a.action === 'unmute') {
     if (who !== room.owner) return reply('onlyOwnerMute');   // this one is the owner's alone, not the stand-in's
@@ -659,7 +692,7 @@ function renderMembers() {
     if (acts && acts.length) { const a = document.createElement('div'); a.className = 'acts'; a.append(...acts); r.append(a); }
     return r;
   };
-  const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '') + (isMuted(c) ? ' 🔇' : '');
+  const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '') + (room.lockCtl && hasCtl(c) ? ' 🎮' : '') + (isMuted(c) ? ' 🔇' : '');
   const sub = (c, got, link) => [c === room.boss && c !== room.owner ? t('boss') : '', what(c, got) || t('here') + (link || '')].filter(Boolean).join(' · ');
   const boss = isBoss(), list = [];
   const sec = (label, n, fold) => {
@@ -836,8 +869,8 @@ function onCtl(m, p, c) {
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if ((m.t === 'react' || m.t === 'chat' || m.t === 'typing') && isMuted(p.cid)) { typers.delete(p.id); drawTyping(); return; }
-  if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to); return; }
+  if (m.t === 'react') { if (isEmoji(m.e) && (!room.emo || p.cid === room.owner || room.emo.includes(m.e))) flyEmoji(m.e); return; }
+  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to, { c: p.cid, n: p.name, re: cleanRe(m.re) }); return; }
   if (m.t === 'typing') { if (m.on) typers.set(p.id, { cid: p.cid, name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
@@ -1132,11 +1165,12 @@ function tick() {
 let stallSince = 0;
 
 // ---------------- controls ----------------
-$('playBtn').onclick = () => act(room.status === 'playing' ? 'pause' : 'play');
-$('back10').onclick = () => act('seek', { to: position() - 10 });
-$('fwd10').onclick = () => act('seek', { to: position() + 10 });
+const ctlOk = () => (canCtl(cid) ? true : (toast(t('ctlLocked')), false));
+$('playBtn').onclick = () => ctlOk() && act(room.status === 'playing' ? 'pause' : 'play');
+$('back10').onclick = () => ctlOk() && act('seek', { to: position() - 10 });
+$('fwd10').onclick = () => ctlOk() && act('seek', { to: position() + 10 });
 $('seek').addEventListener('input', () => { dragging = true; });
-$('seek').addEventListener('change', (e) => { dragging = false; act('seek', { to: +e.target.value }); });
+$('seek').addEventListener('change', (e) => { dragging = false; if (ctlOk()) act('seek', { to: +e.target.value }); });
 $('soundBtn').onclick = (e) => { e.stopPropagation(); muted = false; applyVolume(); vids[active].play().catch(() => {}); $('soundBtn').classList.remove('show'); };
 $('muteBtn').onclick = () => { $('soundBtn').classList.remove('show'); muted = !muted; if (!muted && volume === 0) { volume = 1; $('vol').value = 1; } applyVolume(); };
 $('vol').oninput = (e) => { volume = +e.target.value; muted = volume === 0; applyVolume(); };
@@ -1151,9 +1185,12 @@ function syncMenu() {
   const m = canManage();
   $('menuBtn').style.display = m ? '' : 'none'; $('shareTop').style.display = m ? 'none' : '';
   if (!m) $('menu').classList.remove('show');
-  $('namesBtn').classList.toggle('on', !room.hideNames);
+  $('namesBtn').classList.toggle('on', !room.hideNames); $('ctlBtn').classList.toggle('on', !room.lockCtl); $('emoBtn').classList.toggle('on', !room.emo);
+  const cc = canCtl(cid); $('bar').classList.toggle('locked', !cc); $('seek').disabled = !cc;
   if (namesHidden()) { $('members').classList.remove('show'); try { if (picked.size) { picked.clear(); drawChips(); } } catch (e) {} }
 }
+$('ctlBtn').onclick = (e) => { e.stopPropagation(); act('ctl', { all: !!room.lockCtl }); };
+$('emoBtn').onclick = (e) => { e.stopPropagation(); act('emo', room.emo ? { any: true } : { any: false, list: reacts }); };
 $('namesBtn').onclick = (e) => { e.stopPropagation(); act('names', { show: !!room.hideNames }); };
 $('shareTop').onclick = (e) => { e.stopPropagation(); $('shareBtn').click(); };
 $('menuBtn').onclick = (e) => { e.stopPropagation(); $('members').classList.remove('show'); $('menu').classList.toggle('show'); };
@@ -1204,11 +1241,13 @@ function flyEmoji(e) {
   $('fx').appendChild(s);
   setTimeout(() => s.remove(), 3000);
 }
-function addChat(text, mine, who, priv) {
+function addChat(text, mine, who, priv, meta) {
   const d = document.createElement('div'), n = document.createElement('span');
   d.className = mine ? 'me' : 'peer';
+  if (meta && meta.re) { const q = document.createElement('span'); q.className = 'q'; q.textContent = '↩ ' + (meta.re.c === cid ? t('you') : shown(meta.re.c, meta.re.n)) + ': ' + meta.re.x; d.append(q); }
   n.className = 'who'; n.textContent = (mine ? t('you') : who || t('guest')) + ':';
   d.append(n);
+  if (meta) d.onclick = (e) => { e.stopPropagation(); startReply({ c: meta.c, n: meta.n, x: text }); };   // tap a message to answer it
   if (priv) { const a = document.createElement('span'); a.className = 'at'; a.textContent = '@'; d.append(a); }   // a private message, just for the people mentioned
   d.append(document.createTextNode(text));
   const log = $('chatlog'); log.insertBefore(d, $('typing'));
@@ -1224,9 +1263,17 @@ function setEditing(on) { $('tray').classList.toggle('editing', on); if (!on) em
 let burstT = null, press = null;
 function stopBurst() { clearTimeout(burstT); burstT = null; if (press) { clearTimeout(press.t); press = null; } }
 const editing = () => $('tray').classList.contains('editing');
-const react1 = (e) => { if (isMuted(cid)) { stopBurst(); return toast(t('mutedNow')); } flyEmoji(e); send({ t: 'react', e }); };
+const react1 = (e) => { if (isMuted(cid)) { stopBurst(); return toast(t('mutedNow')); } if (emoSet() && !emoSet().includes(e)) return; flyEmoji(e); send({ t: 'react', e }); };
 function muteClose() { stopBurst(); $('tray').classList.remove('show'); $('chatbar').classList.remove('show'); try { $('chatIn').blur(); } catch (e) {} typingOff(); hideMention(); }
-function updateReactBtn() { $('reactBtn').textContent = reacts[0] || '😊'; }
+function updateReactBtn() { $('reactBtn').textContent = (emoSet() || reacts)[0] || '😊'; }
+// the tray shows my own emojis, or the owner's set when the owner has limited them
+function renderTray() {
+  const set = emoSet();
+  $('trayList').replaceChildren(...(set || reacts).map(emojiButton));
+  editBtn.style.display = set ? 'none' : ''; if (set) setEditing(false);
+  updateReactBtn();
+}
+const pushEmo = () => { if (room.emo && cid === room.owner) act('emo', { any: false, list: reacts }); };   // keep the shared set in step with mine
 function startBurst(e) {
   clearTimeout(burstT);
   let gap = 260;
@@ -1240,7 +1287,7 @@ function emojiButton(e) {
   b.type = 'button'; b.textContent = e; x.className = 'del'; x.textContent = '−'; b.appendChild(x);
   b.onclick = (ev) => {
     ev.stopPropagation();
-    if (editing() && ev.target === x) { reacts = reacts.filter((r) => r !== e); saveReacts(); b.remove(); updateReactBtn(); }
+    if (editing() && ev.target === x) { reacts = reacts.filter((r) => r !== e); saveReacts(); b.remove(); updateReactBtn(); pushEmo(); }
   };
   b.onpointerdown = (ev) => {
     if (editing() || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
@@ -1263,11 +1310,10 @@ emojiIn.oninput = () => {
   const add = graphemes(emojiIn.value).filter((g) => isEmoji(g) && !reacts.includes(g));
   emojiIn.value = '';                                      // plain text is simply dropped
   for (const g of add) { if (reacts.length >= 30) break; reacts.push(g); $('trayList').appendChild(emojiButton(g)); }
-  if (add.length) { saveReacts(); updateReactBtn(); const l = $('trayList'); l.scrollLeft = l.scrollWidth; }
+  if (add.length) { saveReacts(); updateReactBtn(); pushEmo(); const l = $('trayList'); l.scrollLeft = l.scrollWidth; }
 };
-reacts.forEach((e) => $('trayList').appendChild(emojiButton(e)));
 $('tray').appendChild(editBtn);
-updateReactBtn();
+renderTray();
 $('reactBtn').onclick = (e) => { e.stopPropagation(); if (isMuted(cid)) return toast(t('mutedNow')); $('chatbar').classList.remove('show'); setEditing(false); $('tray').classList.toggle('show'); };
 $('chatBtn').onclick = (e) => {
   e.stopPropagation(); if (isMuted(cid)) return toast(t('mutedNow')); $('tray').classList.remove('show');
@@ -1288,7 +1334,7 @@ let typingTo = null, typingAt = 0;   // ids told "I'm typing", and when
 function typingOff() { if (typingTo) { live().filter((p) => typingTo.has(p.id)).forEach((p) => sendTo(p, { t: 'typing', on: false })); typingTo = null; } }
 function typingPing() {
   if (isMuted(cid)) return typingOff();
-  if (cid === room.owner && /(^|\s)#\S*$/.test($('chatIn').value)) return typingOff();   // the owner's # command isn't chat
+  if (cid === room.owner && /(^|\s)[#£]\S*$/.test($('chatIn').value)) return typingOff();   // the owner's # command isn't chat
   if (!$('chatIn').value.trim()) return typingOff();
   const to = picked.size ? live().filter((p) => picked.has(p.cid)) : live(), ids = new Set(to.map((p) => p.id));
   if (typingTo) for (const p of live()) if (typingTo.has(p.id) && !ids.has(p.id)) sendTo(p, { t: 'typing', on: false });   // mention list changed
@@ -1302,17 +1348,34 @@ $('chatbar').onsubmit = (e) => {
   e.preventDefault();
   const msg = $('chatIn').value.trim().slice(0, 120); if (!msg) return;
   if (isMuted(cid)) { muteClose(); return toast(t('mutedNow')); }
+  const re = replyTo ? { c: replyTo.c, n: replyTo.n, x: replyTo.x.slice(0, 60) } : undefined;
+  const mineMeta = { c: cid, n: store.get('wr_name') || t('guest'), re };
   if (picked.size) {
     const to = live().filter((p) => picked.has(p.cid));
     if (!to.length) return toast(t('pickedGone'));
-    to.forEach((p) => sendTo(p, { t: 'chat', text: msg, to: true }));
-    addChat(msg, true, '', true);
-  } else { addChat(msg, true); send({ t: 'chat', text: msg }); }
-  typingTo = null; $('chatIn').value = ''; picked.clear(); drawChips(); hideMention();
+    to.forEach((p) => sendTo(p, { t: 'chat', text: msg, to: true, re }));
+    addChat(msg, true, '', true, mineMeta);
+  } else { addChat(msg, true, '', false, mineMeta); send({ t: 'chat', text: msg, re }); }
+  typingTo = null; $('chatIn').value = ''; picked.clear(); drawChips(); hideMention(); replyTo = null; drawReply();
 };
 // ---- @mentions: type @ to pick people; the message then goes only to them (with an @ before it, no names)
 const picked = new Map();   // cid -> name
 let atFrom = -1, atList = [], atHi = 0;
+let replyTo = null;   // { c, n, x } — the message being answered
+const cleanRe = (r) => (r && typeof r === 'object' && typeof r.x === 'string' ? { c: String(r.c || ''), n: String(r.n || '').slice(0, 24), x: r.x.slice(0, 60) } : null);
+function syncAbove() { const h = $('above').offsetHeight; document.body.style.setProperty('--ab', (h ? h + 8 : 0) + 'px'); }
+function drawReply() {
+  const el = $('rq');
+  if (!replyTo) { el.classList.remove('show'); el.replaceChildren(); return syncAbove(); }
+  const tx = document.createElement('span'), b = document.createElement('b'), x = document.createElement('span');
+  tx.className = 'tx'; b.textContent = t('replyTo', { n: replyTo.c === cid ? t('you') : shown(replyTo.c, replyTo.n) }); tx.append(b, document.createTextNode(replyTo.x));
+  x.className = 'x'; x.textContent = '✕'; x.onpointerdown = (e) => e.preventDefault(); x.onclick = (e) => { e.stopPropagation(); replyTo = null; drawReply(); $('chatIn').focus(); };
+  el.replaceChildren(tx, x); el.classList.add('show'); syncAbove();
+}
+function startReply(q) {
+  if (isMuted(cid)) return toast(t('mutedNow'));
+  replyTo = q; $('tray').classList.remove('show'); $('chatbar').classList.add('show'); drawReply(); $('chatIn').focus();
+}
 function drawChips() {
   $('chips').replaceChildren(...[...picked].map(([c, name]) => {
     const ch = document.createElement('span'); ch.className = 'chip'; ch.textContent = '@' + name;
@@ -1320,11 +1383,16 @@ function drawChips() {
     ch.onclick = (e) => { e.stopPropagation(); picked.delete(c); drawChips(); $('chatIn').focus(); };
     return ch;
   }));
+  syncAbove();
 }
 function hideMention() { atFrom = -1; $('mention').classList.remove('show'); }
 function pickMention(p) {
   const el = $('chatIn'), v = el.value, end = el.selectionStart ?? v.length;
   el.value = v.slice(0, atFrom) + v.slice(end); el.setSelectionRange(atFrom, atFrom);
+  if (atMode === '£') {
+    if (cid === room.owner) { const on = hasCtl(p.cid); act(on ? 'ctlOff' : 'ctlOn', { cid: p.cid }); toast(t(on ? 'ctlTookX' : 'ctlGaveX', { n: p.name || t('guest') })); }
+    hideMention(); el.focus(); typingPing(); return;
+  }
   if (atMode === '#') {
     if (cid === room.owner) { const on = isMuted(p.cid); act(on ? 'unmute' : 'mute', { cid: p.cid }); toast(t(on ? 'unmutedX' : 'mutedX', { n: p.name || t('guest') })); }
     hideMention(); el.focus(); typingPing(); return;
@@ -1338,14 +1406,15 @@ function hintMention(txt) {
 let atMode = '@';   // '@' picks who a message goes to; '#' (owner only) switches someone's reactions and comments off/on
 function showMention() {
   const el = $('chatIn'), v = el.value, caret = el.selectionStart ?? v.length;
-  const owner = cid === room.owner, a1 = v.lastIndexOf('@', caret - 1), a2 = owner ? v.lastIndexOf('#', caret - 1) : -1;
-  const at = Math.max(a1, a2);
+  const owner = cid === room.owner, a1 = v.lastIndexOf('@', caret - 1), a2 = owner ? v.lastIndexOf('#', caret - 1) : -1, a3 = owner ? v.lastIndexOf('£', caret - 1) : -1;
+  const at = Math.max(a1, a2, a3);
+  if (!owner && v.trim() === '£') return hintMention(t('poundOwnerOnly'));
   if (!owner && v.trim() === '#') return hintMention(t('hashOwnerOnly'));   // say why nothing comes up
   if (at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return hideMention();
   atMode = v[at];
   if (atMode === '@' && namesHidden()) return hideMention();
   const q = v.slice(at + 1, caret).trim().toLowerCase();
-  const pool = live().filter((p) => (atMode === '#' ? p.cid !== room.owner : !picked.has(p.cid)));
+  const pool = live().filter((p) => (atMode !== '@' ? p.cid !== room.owner : !picked.has(p.cid)));
   atList = pool.filter((p) => (p.name || t('guest')).toLowerCase().includes(q));
   if (!atList.length) return pool.length ? hideMention() : hintMention(t('noMembers'));
   atFrom = at; atHi = Math.min(atHi, atList.length - 1);
@@ -1353,10 +1422,11 @@ function showMention() {
     const r = document.createElement('div'), i = document.createElement('i'), nm = document.createElement('span');
     nm.textContent = p.name || t('guest'); r.append(i, nm); r.className = (k === atHi ? 'hi' : '') + (isMuted(p.cid) ? ' muted' : '');
     if (atMode === '#') { const st = document.createElement('span'); st.className = 'st'; st.textContent = isMuted(p.cid) ? t('tapUnmute') : t('tapMute'); r.append(st); }
+    if (atMode === '£') { const st = document.createElement('span'); st.className = 'st'; st.textContent = hasCtl(p.cid) ? t('takeCtl') : t('giveCtl'); r.append(st); }
     r.onpointerdown = (e) => { e.preventDefault(); pickMention(p); };   // keep the keyboard open
     return r;
   });
-  if (atMode === '#') { const hd = document.createElement('div'); hd.className = 'head'; hd.textContent = t('muteHead'); rows.unshift(hd); }
+  if (atMode !== '@') { const hd = document.createElement('div'); hd.className = 'head'; hd.textContent = atMode === '#' ? t('muteHead') : t('ctlHead') + (room.lockCtl ? '' : ' — ' + t('ctlOpenHint')); rows.unshift(hd); }
   $('mention').replaceChildren(...rows);
   $('mention').classList.add('show');
 }
