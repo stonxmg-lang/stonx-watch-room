@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120n">
+<meta name="build" content="b20261120o">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -281,6 +281,8 @@ const approved = (c) => !!c && (c === room.owner || (room.ok || []).includes(c))
 const isBoss = () => !!room.owner && (cid === room.owner || cid === room.boss);
 // choosing or removing the movie is for the owner, or whoever stands in while the owner is away
 const canManage = () => !room.owner || isBoss();
+// someone turned away recently: until when (older rooms stored just the time)
+const noUntil = (c) => { const x = (room.no || {})[c]; return !x ? 0 : typeof x === 'number' ? x : +x.until || 0; };
 const isMuted = (c) => !!c && (room.mute || []).includes(c);   // the owner switched off this person's reactions and comments
 let waiting = false;   // I asked to come in and nobody has said yes yet
 const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
@@ -490,7 +492,7 @@ function door(a, who, from) {
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss(); pumpWants();
   }
   if (a.action === 'reject') {
-    commit((r) => { r.no = { ...(r.no || {}), [target]: now() + 10 * 60000 }; });
+    commit((r) => { r.no = { ...(r.no || {}), [target]: { until: now() + 10 * 60000, name: (p && p.name) || t('guest') } }; });
     if (p) { sendTo(p, { t: 'denied' }); setTimeout(() => dropPeer(p), 400); }
     updReq();
   }
@@ -534,6 +536,16 @@ function selfCheck() {
   if (!live().length && ![...peers.values()].some((p) => p.ready)) { waiting = true; return; }
   handingOff = true; waiting = true;
   setTimeout(() => { kill(peer); peers.clear(); isMaster = false; refreshConn(); setTimeout(() => { handingOff = false; connect(); }, 4500); }, 600);
+}
+let denied = false, deniedT = null;
+function goDenied() {
+  if (stopped && !denied) return;
+  denied = true; stopped = true; waiting = false; showFatal(t('deniedT'), t('deniedP')); kill(peer); peers.clear(); refreshConn();
+  clearTimeout(deniedT); deniedT = setTimeout(() => { if (!denied) return; stopped = false; connect(); }, 20000);   // ask again quietly
+}
+function undeny() {
+  if (!denied) return;
+  denied = false; clearTimeout(deniedT); joined = true; $('gate').style.display = 'none';
 }
 function goWait() {
   waiting = true;
@@ -631,6 +643,11 @@ function renderMembers() {
   if (reqs.length) {
     list.push(h(t('reqs', { n: reqs.length })));
     for (const q of reqs) list.push(row(q.name, t('wantsInRow'), 'req', [btn(t('approve'), 'yes', () => act('approve', { cid: q.cid })), btn('❌', 'no', () => act('reject', { cid: q.cid }))]));
+  }
+  const nos = boss ? Object.entries(room.no || {}).filter(([c]) => noUntil(c) > now() && !approved(c)) : [];
+  if (nos.length) {
+    list.push(h(t('rejected', { n: nos.length })));
+    for (const [c, x] of nos) list.push(row((x && x.name) || t('guest'), t('rejectedRow'), 'off', [btn(t('approve'), 'yes', () => act('approve', { cid: c }))]));
   }
   const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]);
   list.push(h(t('inStream')));
@@ -743,7 +760,7 @@ function onCtl(m, p, c) {
   if (!m || typeof m !== 'object') return;
   p.lastMsg = Date.now();
   if (m.t === 'full') { stopped = true; showFatal(t('fullT'), t('fullP')); kill(peer); return; }
-  if (m.t === 'denied') { stopped = true; waiting = false; showFatal(t('deniedT'), t('deniedP')); kill(peer); return; }
+  if (m.t === 'denied') { goDenied(); return; }
   if (m.t !== 'hello' && (c !== p.ctl || !p.ready)) return;
   if (p.pending) { if (m.t === 'bye') dropPeer(p); return; }   // someone still waiting at the door can't do anything else
   if (m.t === 'ping') return sendTo(p, { t: 'pong', t0: m.t0, t1: Date.now() });
@@ -759,8 +776,7 @@ function onCtl(m, p, c) {
     p.cid = m.cid; p.name = String(m.name || t('guest')).slice(0, 24); p.since = +m.since || Date.now();
     if (!isMaster && p.id !== MASTER_ID && !approved(m.cid)) { peers.delete(p.id); try { c.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} return; }
     if (isMaster) {
-      const no = (room.no || {})[m.cid];
-      if (no && no > now()) { c.send({ t: 'denied' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
+      if (noUntil(m.cid) > now()) { c.send({ t: 'denied' }); peers.delete(p.id); setTimeout(() => c.close(), 500); return; }
       if (!approved(m.cid)) { p.ready = true; p.pending = true; c.send({ t: 'wait' }); updReq(); selfCheck(); return; }
       p.pending = false;
     }
@@ -776,8 +792,8 @@ function onCtl(m, p, c) {
   }
   // the master tells everyone who's here; of each pair, the one with the smaller id makes the call (so nobody calls twice)
   if (m.t === 'peers') { if (!isMaster && Array.isArray(m.ids) && peer) m.ids.forEach((id) => typeof id === 'string' && peer.id < id && linkTo(id)); return; }
-  if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { waiting = false; applyRoom(m.room); pumpWants(); } return; }
-  if (m.t === 'wait') { if (p.id === MASTER_ID && !isMaster) goWait(); return; }
+  if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { undeny(); waiting = false; applyRoom(m.room); pumpWants(); } return; }
+  if (m.t === 'wait') { if (p.id === MASTER_ID && !isMaster) { undeny(); goWait(); } return; }
   if (m.t === 'ok') { if (p.id === MASTER_ID && waiting) { waiting = false; toast(t('accepted')); } return; }
   if (m.t === 'note') { if (typeof m.key === 'string' && /^\w+$/.test(m.key)) toast(t(m.key)); else if (typeof m.text === 'string') toast(m.text.slice(0, 80)); return; }
   if (m.t === 'act') { if (isMaster) handleAct(m, p); return; }

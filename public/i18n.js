@@ -3,6 +3,7 @@
 (function () {
   const D = {
     ar: {
+      rejected: 'اترفضوا من شوية ({n})', rejectedRow: 'اترفض طلبه — تقدر تدخله برضو',
       shareShort: '🔗 مشاركة', onlyMgr: 'اختيار الفيلم ومسحه لصاحب الغرفة بس', pickMine: 'اختار فيلم من جهازك وهيوصل للكل.', waitPick: 'مستنيين صاحب الغرفة يختار فيلم.',
       noMembers: 'مفيش أعضاء تانيين في الغرفة دلوقتي', hashOwnerOnly: '# دي لصاحب الغرفة 👑 بس',
       onlyOwnerMute: 'دي لصاحب الغرفة بس', mutedYou: '🔇 صاحب الغرفة وقف عندك التفاعل والتعليقات', unmutedYou: '💬 صاحب الغرفة رجّعلك التفاعل والتعليقات',
@@ -38,7 +39,7 @@
       reqs: 'طلبات الدخول ({n})', wantsInRow: 'عايز يدخل الغرفة', approve: '✅ قبول', inStream: 'في البث', here: 'موجود في الغرفة',
       notHere: 'مش موجودين', leftAgo: 'خرج {t}', removeBtn: 'شيله', removeAsk: 'تشيل {n} من البث؟ هيرجع لطلبات الدخول.',
       owner: 'صاحب الغرفة', boss: 'المسؤول لحد ما صاحب الغرفة يرجع', movieOwner: 'صاحب الفيلم 🎬', hasAll: 'الفيلم كله عنده ✅', gotPct: 'وصله {p}% من الفيلم',
-      connecting: '⚠️ بنحاول نتصل…', fullT: 'الغرفة مليانة', fullP: 'الغرفة تكفي 5 أشخاص بس.', deniedT: 'مش هتقدر تدخل دلوقتي', deniedP: 'صاحب الغرفة رفض طلب الدخول.',
+      connecting: '⚠️ بنحاول نتصل…', fullT: 'الغرفة مليانة', fullP: 'الغرفة تكفي 5 أشخاص بس.', deniedT: 'مش هتقدر تدخل دلوقتي', deniedP: 'صاحب الغرفة رفض طلب الدخول. خلي الصفحة مفتوحة، ولو غيّر رأيه هتدخل لوحدك.',
       accepted: '✅ اتقبلت — أهلاً بيك في الغرفة',
       prepMovie: 'بنجهّز الفيلم…', fewSecs: 'ثواني ويبدأ.', needsConvert: 'الملف ده محتاج تحويل، هياخد وقت أطول.',
       prepPart: 'بنجهّز الفيلم: {i} من {n}', prepPartSub: 'تقدر تشغّل عادي والباقي بيتجهز.', problem: 'حصلت مشكلة', tryAgain: 'جرّب تاني، ولو المشكلة اتكررت ابعتلي الرسالة دي.',
@@ -58,6 +59,7 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      rejected: 'Recently declined ({n})', rejectedRow: 'Declined — you can still let them in',
       shareShort: '🔗 Share', onlyMgr: 'Only the room owner can pick or remove the movie', pickMine: 'Pick a movie from your device and it reaches everyone.', waitPick: 'Waiting for the room owner to pick a movie.',
       noMembers: 'Nobody else is in the room right now', hashOwnerOnly: '# is for the room owner 👑 only',
       onlyOwnerMute: 'Only the room owner can do this', mutedYou: '🔇 The room owner turned off your reactions and comments', unmutedYou: '💬 The room owner turned your reactions and comments back on',
@@ -93,7 +95,7 @@
       reqs: 'Join requests ({n})', wantsInRow: 'Wants to join', approve: '✅ Accept', inStream: 'Watching', here: 'In the room',
       notHere: 'Not here', leftAgo: 'Left {t}', removeBtn: 'Remove', removeAsk: 'Remove {n}? They’ll go back to the join requests.',
       owner: 'Room owner', boss: 'In charge until the owner is back', movieOwner: 'Movie owner 🎬', hasAll: 'Has the whole movie ✅', gotPct: 'Has {p}% of the movie',
-      connecting: '⚠️ Connecting…', fullT: 'The room is full', fullP: 'A room holds 5 people at most.', deniedT: 'You can’t join right now', deniedP: 'The room owner declined your request.',
+      connecting: '⚠️ Connecting…', fullT: 'The room is full', fullP: 'A room holds 5 people at most.', deniedT: 'You can’t join right now', deniedP: 'The room owner declined your request. Keep this page open — if they change their mind, you’ll get in automatically.',
       accepted: '✅ You’re in — welcome to the room',
       prepMovie: 'Preparing the movie…', fewSecs: 'Just a few seconds.', needsConvert: 'This file needs converting, so it will take longer.',
       prepPart: 'Preparing the movie: {i} of {n}', prepPartSub: 'You can play now; the rest is being prepared.', problem: 'Something went wrong', tryAgain: 'Try again, and if it keeps happening send me this message.',
@@ -113,6 +115,7 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      rejected: 'Az önce reddedilenler ({n})', rejectedRow: 'Reddedildi — yine de içeri alabilirsin',
       shareShort: '🔗 Paylaş', onlyMgr: 'Filmi yalnızca oda sahibi seçebilir veya kaldırabilir', pickMine: 'Cihazından bir film seç, herkese ulaşsın.', waitPick: 'Oda sahibinin film seçmesi bekleniyor.',
       noMembers: 'Şu an odada başka kimse yok', hashOwnerOnly: '# yalnızca oda sahibi 👑 içindir',
       onlyOwnerMute: 'Bunu yalnızca oda sahibi yapabilir', mutedYou: '🔇 Oda sahibi tepki ve yorumlarını kapattı', unmutedYou: '💬 Oda sahibi tepki ve yorumlarını yeniden açtı',
@@ -148,7 +151,7 @@
       reqs: 'Katılma istekleri ({n})', wantsInRow: 'Odaya girmek istiyor', approve: '✅ Kabul', inStream: 'Yayında', here: 'Odada',
       notHere: 'Burada değil', leftAgo: '{t} çıktı', removeBtn: 'Çıkar', removeAsk: '{n} yayından çıkarılsın mı? Katılma isteklerine geri döner.',
       owner: 'Oda sahibi', boss: 'Oda sahibi dönene kadar sorumlu', movieOwner: 'Filmin sahibi 🎬', hasAll: 'Filmin tamamı onda ✅', gotPct: 'Filmin %{p} kadarı ulaştı',
-      connecting: '⚠️ Bağlanılıyor…', fullT: 'Oda dolu', fullP: 'Bir oda en fazla 5 kişi alır.', deniedT: 'Şu an giremezsin', deniedP: 'Oda sahibi katılma isteğini reddetti.',
+      connecting: '⚠️ Bağlanılıyor…', fullT: 'Oda dolu', fullP: 'Bir oda en fazla 5 kişi alır.', deniedT: 'Şu an giremezsin', deniedP: 'Oda sahibi katılma isteğini reddetti. Bu sayfayı açık tut; fikrini değiştirirse otomatik olarak gireceksin.',
       accepted: '✅ Kabul edildin — odaya hoş geldin',
       prepMovie: 'Film hazırlanıyor…', fewSecs: 'Birkaç saniye sürer.', needsConvert: 'Bu dosyanın dönüştürülmesi gerekiyor, daha uzun sürecek.',
       prepPart: 'Film hazırlanıyor: {i} / {n}', prepPartSub: 'Şimdi oynatabilirsin, kalanı hazırlanıyor.', problem: 'Bir sorun oluştu', tryAgain: 'Tekrar dene; sorun devam ederse bu mesajı bana gönder.',
@@ -168,6 +171,7 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      rejected: 'تازه رد شده‌ها ({n})', rejectedRow: 'رد شد — هنوز می‌توانی راهش بدهی',
       shareShort: '🔗 اشتراک', onlyMgr: 'انتخاب و حذف فیلم فقط با صاحب اتاق است', pickMine: 'از دستگاهت یک فیلم انتخاب کن تا به همه برسد.', waitPick: 'منتظر انتخاب فیلم توسط صاحب اتاق هستیم.',
       noMembers: 'الان کس دیگری در اتاق نیست', hashOwnerOnly: '# فقط برای صاحب اتاق 👑 است',
       onlyOwnerMute: 'این کار فقط از صاحب اتاق برمی‌آید', mutedYou: '🔇 صاحب اتاق واکنش‌ها و نظرهایت را بست', unmutedYou: '💬 صاحب اتاق واکنش‌ها و نظرهایت را دوباره باز کرد',
@@ -203,7 +207,7 @@
       reqs: 'درخواست‌های ورود ({n})', wantsInRow: 'می‌خواهد وارد شود', approve: '✅ قبول', inStream: 'در پخش', here: 'در اتاق',
       notHere: 'حاضر نیستند', leftAgo: '{t} رفت', removeBtn: 'بیرون کن', removeAsk: '{n} از پخش بیرون شود؟ به درخواست‌های ورود برمی‌گردد.',
       owner: 'صاحب اتاق', boss: 'مسئول تا برگشتن صاحب اتاق', movieOwner: 'صاحب فیلم 🎬', hasAll: 'کل فیلم را دارد ✅', gotPct: '{p}٪ فیلم به او رسیده',
-      connecting: '⚠️ در حال اتصال…', fullT: 'اتاق پر است', fullP: 'هر اتاق حداکثر ۵ نفر جا دارد.', deniedT: 'فعلاً نمی‌توانی وارد شوی', deniedP: 'صاحب اتاق درخواست ورودت را رد کرد.',
+      connecting: '⚠️ در حال اتصال…', fullT: 'اتاق پر است', fullP: 'هر اتاق حداکثر ۵ نفر جا دارد.', deniedT: 'فعلاً نمی‌توانی وارد شوی', deniedP: 'صاحب اتاق درخواست ورودت را رد کرد. این صفحه را باز نگه دار؛ اگر نظرش عوض شود، خودکار وارد می‌شوی.',
       accepted: '✅ پذیرفته شدی — به اتاق خوش آمدی',
       prepMovie: 'در حال آماده‌سازی فیلم…', fewSecs: 'چند ثانیه طول می‌کشد.', needsConvert: 'این فایل باید تبدیل شود، بیشتر طول می‌کشد.',
       prepPart: 'آماده‌سازی فیلم: {i} از {n}', prepPartSub: 'می‌توانی پخش کنی، بقیه‌اش آماده می‌شود.', problem: 'مشکلی پیش آمد', tryAgain: 'دوباره امتحان کن و اگر تکرار شد این پیام را برایم بفرست.',
@@ -223,6 +227,7 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      rejected: 'Refusés récemment ({n})', rejectedRow: 'Refusé — tu peux quand même le faire entrer',
       shareShort: '🔗 Partager', onlyMgr: 'Seul le propriétaire du salon peut choisir ou retirer le film', pickMine: 'Choisis un film sur ton appareil, il arrivera chez tout le monde.', waitPick: 'En attente du choix du film par le propriétaire.',
       noMembers: 'Personne d’autre dans le salon pour l’instant', hashOwnerOnly: '# est réservé au propriétaire du salon 👑',
       onlyOwnerMute: 'Seul le propriétaire du salon peut faire ça', mutedYou: '🔇 Le propriétaire a coupé tes réactions et commentaires', unmutedYou: '💬 Le propriétaire a réactivé tes réactions et commentaires',
@@ -258,7 +263,7 @@
       reqs: 'Demandes d’entrée ({n})', wantsInRow: 'Veut entrer', approve: '✅ Accepter', inStream: 'Dans le salon', here: 'Présent',
       notHere: 'Absents', leftAgo: 'Parti {t}', removeBtn: 'Retirer', removeAsk: 'Retirer {n} ? Il retournera dans les demandes d’entrée.',
       owner: 'Propriétaire du salon', boss: 'Responsable jusqu’au retour du propriétaire', movieOwner: 'Propriétaire du film 🎬', hasAll: 'A tout le film ✅', gotPct: 'A reçu {p} % du film',
-      connecting: '⚠️ Connexion…', fullT: 'Le salon est plein', fullP: 'Un salon accueille 5 personnes au maximum.', deniedT: 'Tu ne peux pas entrer pour l’instant', deniedP: 'Le propriétaire du salon a refusé ta demande.',
+      connecting: '⚠️ Connexion…', fullT: 'Le salon est plein', fullP: 'Un salon accueille 5 personnes au maximum.', deniedT: 'Tu ne peux pas entrer pour l’instant', deniedP: 'Le propriétaire du salon a refusé ta demande. Garde cette page ouverte : s’il change d’avis, tu entreras automatiquement.',
       accepted: '✅ Accepté — bienvenue dans le salon',
       prepMovie: 'Préparation du film…', fewSecs: 'Quelques secondes.', needsConvert: 'Ce fichier doit être converti, ce sera plus long.',
       prepPart: 'Préparation du film : {i} sur {n}', prepPartSub: 'Tu peux lancer la lecture, le reste se prépare.', problem: 'Un problème est survenu', tryAgain: 'Réessaie, et si ça se reproduit, envoie-moi ce message.',
@@ -278,6 +283,7 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      rejected: 'Недавно отклонённые ({n})', rejectedRow: 'Отклонён — всё ещё можно впустить',
       shareShort: '🔗 Поделиться', onlyMgr: 'Выбирать и убирать фильм может только владелец комнаты', pickMine: 'Выбери фильм на своём устройстве, и он дойдёт до всех.', waitPick: 'Ждём, пока владелец комнаты выберет фильм.',
       noMembers: 'Сейчас в комнате больше никого нет', hashOwnerOnly: '# только для владельца комнаты 👑',
       onlyOwnerMute: 'Это может только владелец комнаты', mutedYou: '🔇 Владелец комнаты отключил тебе реакции и комментарии', unmutedYou: '💬 Владелец комнаты снова включил тебе реакции и комментарии',
@@ -313,7 +319,7 @@
       reqs: 'Запросы на вход ({n})', wantsInRow: 'Хочет войти', approve: '✅ Принять', inStream: 'Смотрят', here: 'В комнате',
       notHere: 'Нет на месте', leftAgo: 'Вышел {t}', removeBtn: 'Убрать', removeAsk: 'Убрать {n} из просмотра? Он вернётся в запросы на вход.',
       owner: 'Владелец комнаты', boss: 'Главный, пока владелец не вернётся', movieOwner: 'Владелец фильма 🎬', hasAll: 'Есть весь фильм ✅', gotPct: 'Получил {p}% фильма',
-      connecting: '⚠️ Подключаемся…', fullT: 'Комната заполнена', fullP: 'В комнате может быть не больше 5 человек.', deniedT: 'Сейчас войти нельзя', deniedP: 'Владелец комнаты отклонил запрос.',
+      connecting: '⚠️ Подключаемся…', fullT: 'Комната заполнена', fullP: 'В комнате может быть не больше 5 человек.', deniedT: 'Сейчас войти нельзя', deniedP: 'Владелец комнаты отклонил запрос. Не закрывай страницу — если он передумает, ты войдёшь автоматически.',
       accepted: '✅ Тебя приняли — добро пожаловать в комнату',
       prepMovie: 'Готовим фильм…', fewSecs: 'Несколько секунд.', needsConvert: 'Этот файл нужно конвертировать, это займёт больше времени.',
       prepPart: 'Готовим фильм: {i} из {n}', prepPartSub: 'Можно смотреть, остальное готовится.', problem: 'Что-то пошло не так', tryAgain: 'Попробуй ещё раз, а если повторится — пришли мне это сообщение.',
