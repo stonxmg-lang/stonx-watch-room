@@ -3,7 +3,8 @@
 (function () {
   const D = {
     ar: {
-      rejected: 'اترفضوا من شوية ({n})', rejectedRow: 'اترفض طلبه — تقدر تدخله برضو',
+      reqsT: 'طلبات الدخول', rejectedT: 'اترفضوا من شوية', rejectedRow: 'اترفض — تقدر تقبله برضو',
+      rejected: 'اترفضوا من شوية ({n})',
       shareShort: '🔗 مشاركة', onlyMgr: 'اختيار الفيلم ومسحه لصاحب الغرفة بس', pickMine: 'اختار فيلم من جهازك وهيوصل للكل.', waitPick: 'مستنيين صاحب الغرفة يختار فيلم.',
       noMembers: 'مفيش أعضاء تانيين في الغرفة دلوقتي', hashOwnerOnly: '# دي لصاحب الغرفة 👑 بس',
       onlyOwnerMute: 'دي لصاحب الغرفة بس', mutedYou: '🔇 صاحب الغرفة وقف عندك التفاعل والتعليقات', unmutedYou: '💬 صاحب الغرفة رجّعلك التفاعل والتعليقات',
@@ -59,7 +60,8 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
-      rejected: 'Recently declined ({n})', rejectedRow: 'Declined — you can still let them in',
+      reqsT: 'Join requests', rejectedT: 'Recently declined', rejectedRow: 'Declined — you can still accept',
+      rejected: 'Recently declined ({n})',
       shareShort: '🔗 Share', onlyMgr: 'Only the room owner can pick or remove the movie', pickMine: 'Pick a movie from your device and it reaches everyone.', waitPick: 'Waiting for the room owner to pick a movie.',
       noMembers: 'Nobody else is in the room right now', hashOwnerOnly: '# is for the room owner 👑 only',
       onlyOwnerMute: 'Only the room owner can do this', mutedYou: '🔇 The room owner turned off your reactions and comments', unmutedYou: '💬 The room owner turned your reactions and comments back on',
@@ -115,7 +117,8 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
-      rejected: 'Az önce reddedilenler ({n})', rejectedRow: 'Reddedildi — yine de içeri alabilirsin',
+      reqsT: 'Katılma istekleri', rejectedT: 'Az önce reddedilenler', rejectedRow: 'Reddedildi — yine de kabul edebilirsin',
+      rejected: 'Az önce reddedilenler ({n})',
       shareShort: '🔗 Paylaş', onlyMgr: 'Filmi yalnızca oda sahibi seçebilir veya kaldırabilir', pickMine: 'Cihazından bir film seç, herkese ulaşsın.', waitPick: 'Oda sahibinin film seçmesi bekleniyor.',
       noMembers: 'Şu an odada başka kimse yok', hashOwnerOnly: '# yalnızca oda sahibi 👑 içindir',
       onlyOwnerMute: 'Bunu yalnızca oda sahibi yapabilir', mutedYou: '🔇 Oda sahibi tepki ve yorumlarını kapattı', unmutedYou: '💬 Oda sahibi tepki ve yorumlarını yeniden açtı',
@@ -171,7 +174,8 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
-      rejected: 'تازه رد شده‌ها ({n})', rejectedRow: 'رد شد — هنوز می‌توانی راهش بدهی',
+      reqsT: 'درخواست‌های ورود', rejectedT: 'تازه رد شده‌ها', rejectedRow: 'رد شد — هنوز می‌توانی قبول کنی',
+      rejected: 'تازه رد شده‌ها ({n})',
       shareShort: '🔗 اشتراک', onlyMgr: 'انتخاب و حذف فیلم فقط با صاحب اتاق است', pickMine: 'از دستگاهت یک فیلم انتخاب کن تا به همه برسد.', waitPick: 'منتظر انتخاب فیلم توسط صاحب اتاق هستیم.',
       noMembers: 'الان کس دیگری در اتاق نیست', hashOwnerOnly: '# فقط برای صاحب اتاق 👑 است',
       onlyOwnerMute: 'این کار فقط از صاحب اتاق برمی‌آید', mutedYou: '🔇 صاحب اتاق واکنش‌ها و نظرهایت را بست', unmutedYou: '💬 صاحب اتاق واکنش‌ها و نظرهایت را دوباره باز کرد',
@@ -227,7 +231,8 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
-      rejected: 'Refusés récemment ({n})', rejectedRow: 'Refusé — tu peux quand même le faire entrer',
+      reqsT: 'Demandes d’entrée', rejectedT: 'Refusés récemment', rejectedRow: 'Refusé — tu peux encore accepter',
+      rejected: 'Refusés récemment ({n})',
       shareShort: '🔗 Partager', onlyMgr: 'Seul le propriétaire du salon peut choisir ou retirer le film', pickMine: 'Choisis un film sur ton appareil, il arrivera chez tout le monde.', waitPick: 'En attente du choix du film par le propriétaire.',
       noMembers: 'Personne d’autre dans le salon pour l’instant', hashOwnerOnly: '# est réservé au propriétaire du salon 👑',
       onlyOwnerMute: 'Seul le propriétaire du salon peut faire ça', mutedYou: '🔇 Le propriétaire a coupé tes réactions et commentaires', unmutedYou: '💬 Le propriétaire a réactivé tes réactions et commentaires',
@@ -283,7 +288,8 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
-      rejected: 'Недавно отклонённые ({n})', rejectedRow: 'Отклонён — всё ещё можно впустить',
+      reqsT: 'Запросы на вход', rejectedT: 'Недавно отклонённые', rejectedRow: 'Отклонён — ещё можно принять',
+      rejected: 'Недавно отклонённые ({n})',
       shareShort: '🔗 Поделиться', onlyMgr: 'Выбирать и убирать фильм может только владелец комнаты', pickMine: 'Выбери фильм на своём устройстве, и он дойдёт до всех.', waitPick: 'Ждём, пока владелец комнаты выберет фильм.',
       noMembers: 'Сейчас в комнате больше никого нет', hashOwnerOnly: '# только для владельца комнаты 👑',
       onlyOwnerMute: 'Это может только владелец комнаты', mutedYou: '🔇 Владелец комнаты отключил тебе реакции и комментарии', unmutedYou: '💬 Владелец комнаты снова включил тебе реакции и комментарии',

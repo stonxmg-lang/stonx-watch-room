@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120o">
+<meta name="build" content="b20261120p">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -70,19 +70,25 @@
            background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:16px; padding:14px; display:none; max-height:75vh; overflow:auto; }
   .panel.show { display:block; }
   .panel h3 { font-size:14px; margin-bottom:10px; color:#cfd3da; }
-  .mem { display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); }
-  .mem:last-child { border:0; }
-  .mem i { width:9px; height:9px; border-radius:50%; background:var(--acc); box-shadow:0 0 8px var(--acc); flex:none; }
-  .mem.off i { background:#4a505b; box-shadow:none; }
-  .mem div { display:flex; flex-direction:column; min-width:0; }
-  .mem b { font-size:14px; font-weight:800; } .mem.off b { color:#9aa0aa; }
-  .mem small { font-size:12px; color:var(--mut); line-height:1.5; }
-  .mem div.grow1 { flex:1; }
-  .mem .acts { display:flex; gap:6px; flex-direction:row; flex:none; }
-  .mem .acts button { font:inherit; font-size:12px; font-weight:800; border:0; border-radius:99px; padding:6px 11px; cursor:pointer; background:#ffffff14; color:var(--fg); }
-  .mem .acts .yes { background:var(--acc); color:#04140a; } .mem .acts .no { background:#ff3b4e26; color:#ff6b78; }
-  .mem.req i { background:#ffd166; box-shadow:0 0 8px #ffd166; }
-  .panel h4 { font-size:12px; color:var(--mut); font-weight:800; margin:12px 0 2px; } .panel h4:first-of-type { margin-top:0; }
+  /* members list: compact rows — avatar with a status dot, one line of name, one small line of detail */
+  #members { width:min(290px,calc(100vw - 20px)); padding:8px; max-height:62vh; }
+  .sec { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:var(--mut); padding:8px 6px 4px; letter-spacing:.02em; }
+  .sec:first-child { padding-top:2px; } .sec .cnt { background:#ffffff12; color:#cfd3da; border-radius:99px; padding:0 7px; font-size:10.5px; line-height:17px; }
+  .sec.fold { cursor:pointer; user-select:none; } .sec.fold::after { content:'▾'; margin-inline-start:auto; font-size:11px; transition:transform .2s; } .sec.fold.closed::after { transform:rotate(-90deg); }
+  [dir=rtl] .sec.fold.closed::after { transform:rotate(90deg); }
+  .mem { display:flex; align-items:center; gap:9px; padding:6px; border-radius:10px; }
+  .mem + .mem { margin-top:1px; }
+  .mem .av { position:relative; width:30px; height:30px; border-radius:50%; flex:none; display:grid; place-items:center; font-size:13px; font-weight:800; color:#fff; }
+  .mem .av::after { content:''; position:absolute; bottom:-1px; inset-inline-end:-1px; width:9px; height:9px; border-radius:50%; background:var(--acc); border:2px solid #15171d; }
+  .mem.off .av { filter:grayscale(1) brightness(.6); } .mem.off .av::after { background:#5a606b; }
+  .mem.req .av::after { background:#ffd166; }
+  .mem .tx { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .mem b { font-size:13.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .mem.off b { color:#9aa0aa; }
+  .mem b em { font-style:normal; font-weight:600; font-size:11px; color:var(--mut); margin-inline-start:4px; }
+  .mem small { font-size:11px; color:var(--mut); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mem .acts { display:flex; gap:5px; flex:none; }
+  .mem .acts button { width:28px; height:28px; border:0; border-radius:50%; cursor:pointer; display:grid; place-items:center; font:800 14px/1 system-ui,sans-serif; background:#ffffff12; color:var(--fg); }
+  .mem .acts .yes { background:var(--acc); color:#04140a; } .mem .acts .no { background:#ff3b4e22; color:#ff6b78; }
   .sound { position:fixed; z-index:13; left:50%; top:50%; transform:translate(-50%,-50%); display:none; font:inherit; font-weight:800; font-size:16px;
            padding:13px 24px; border-radius:99px; border:0; background:var(--acc); color:#04140a; box-shadow:0 6px 30px #000a; cursor:pointer; }
   .sound.show { display:block; }
@@ -624,38 +630,52 @@ function ding() {
 const MKEY = 'wr2_members_' + roomId;
 let known = (() => { try { return JSON.parse(store.get(MKEY)) || {}; } catch (e) { return {}; } })();   // cid -> { name, seen }
 function remember(p) { if (!p.cid) return; known[p.cid] = { name: p.name || t('guest'), seen: Date.now() }; store.set(MKEY, JSON.stringify(known)); }
+const memFold = { no: true, gone: false };   // which small sections are open (declined: open, gone: closed)
 function renderMembers() {
   if (!$('members').classList.contains('show')) return;
   const n = parts().length, mid = room.movie && room.movie.id;
   const what = (c, got) => !room.movie ? '' : c === room.movie.src ? t('movieOwner') : got >= n ? t('hasAll') : t('gotPct', { p: Math.round((got / n) * 100) });
-  const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = cls; b.onclick = (e) => { e.stopPropagation(); fn(); }; return b; };
-  const row = (name, state, kind, acts) => {
-    const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
-    r.className = 'mem' + (kind === 'off' ? ' off' : kind === 'req' ? ' req' : ''); t.className = 'grow1';
-    b.textContent = name; sm.textContent = state; t.append(b, sm); r.append(i, t);
+  const btn = (txt, cls, label, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = cls; b.title = label; b.setAttribute('aria-label', label); b.onclick = (e) => { e.stopPropagation(); fn(); }; return b; };
+  const hue = (x) => { let h = 0; for (const ch of String(x)) h = (h * 31 + ch.codePointAt(0)) % 360; return h; };
+  const row = (key, name, sub, kind, acts, badges, me) => {
+    const r = document.createElement('div'), av = document.createElement('span'), tx = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
+    r.className = 'mem' + (kind === 'off' ? ' off' : kind === 'req' ? ' req' : '');
+    av.className = 'av'; av.textContent = (graphemes(String(name).trim())[0] || '?').toUpperCase(); av.style.background = `hsl(${hue(key || name)} 45% 38%)`;
+    tx.className = 'tx'; b.textContent = name + (badges || '');
+    if (me) { const em = document.createElement('em'); em.textContent = t('you'); b.append(em); }
+    sm.textContent = sub; tx.append(b, sm); r.append(av, tx);
     if (acts && acts.length) { const a = document.createElement('div'); a.className = 'acts'; a.append(...acts); r.append(a); }
     return r;
   };
   const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '') + (isMuted(c) ? ' 🔇' : '');
-  const role = (c) => (c === room.owner ? t('owner') : c === room.boss ? t('boss') : '');
-  const boss = isBoss(), list = [], h = (s) => { const x = document.createElement('h4'); x.textContent = s; return x; };
+  const sub = (c, got, link) => [c === room.boss && c !== room.owner ? t('boss') : '', what(c, got) || t('here') + (link || '')].filter(Boolean).join(' · ');
+  const boss = isBoss(), list = [];
+  const sec = (label, n, fold) => {
+    const x = document.createElement('div'); x.className = 'sec' + (fold ? ' fold' + (memFold[fold] ? '' : ' closed') : '');
+    const s1 = document.createElement('span'), c = document.createElement('span'); s1.textContent = label; c.className = 'cnt'; c.textContent = n; x.append(s1, c);
+    if (fold) x.onclick = (e) => { e.stopPropagation(); memFold[fold] = !memFold[fold]; renderMembers(); };
+    return x;
+  };
   const reqs = boss ? (room.req || []) : [];
   if (reqs.length) {
-    list.push(h(t('reqs', { n: reqs.length })));
-    for (const q of reqs) list.push(row(q.name, t('wantsInRow'), 'req', [btn(t('approve'), 'yes', () => act('approve', { cid: q.cid })), btn('❌', 'no', () => act('reject', { cid: q.cid }))]));
-  }
-  const nos = boss ? Object.entries(room.no || {}).filter(([c]) => noUntil(c) > now() && !approved(c)) : [];
-  if (nos.length) {
-    list.push(h(t('rejected', { n: nos.length })));
-    for (const [c, x] of nos) list.push(row((x && x.name) || t('guest'), t('rejectedRow'), 'off', [btn(t('approve'), 'yes', () => act('approve', { cid: c }))]));
+    list.push(sec(t('reqsT'), reqs.length));
+    for (const q of reqs) list.push(row(q.cid, q.name, t('wantsInRow'), 'req', [btn('✓', 'yes', t('approve'), () => act('approve', { cid: q.cid })), btn('✕', 'no', '❌', () => act('reject', { cid: q.cid }))]));
   }
   const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]);
-  list.push(h(t('inStream')));
-  list.push(row((store.get('wr_name') || t('guest')) + ` (${t('you')})` + tag(cid), [role(cid), what(cid, have.size)].filter(Boolean).join(' · ') || t('here'), 'on'));
-  for (const p of on) list.push(row((p.name || t('guest')) + tag(p.cid), [role(p.cid) || t('here') + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), 'on',
-    boss && p.cid !== room.owner ? [btn(t('removeBtn'), 'no', () => { if (confirm(t('removeAsk', { n: p.name || t('guest') }))) act('remove', { cid: p.cid }); })] : null));
+  list.push(sec(t('inStream'), on.length + 1));
+  list.push(row(cid, store.get('wr_name') || t('guest'), sub(cid, have.size), 'on', null, tag(cid), true));
+  for (const p of on) list.push(row(p.cid, p.name || t('guest'), sub(p.cid, p.mid === mid ? p.have.size : 0, p.link), 'on',
+    boss && p.cid !== room.owner ? [btn('✕', 'no', t('removeBtn'), () => { if (confirm(t('removeAsk', { n: p.name || t('guest') }))) act('remove', { cid: p.cid }); })] : null, tag(p.cid)));
+  const nos = boss ? Object.entries(room.no || {}).filter(([c]) => noUntil(c) > now() && !approved(c)) : [];
+  if (nos.length) {
+    list.push(sec(t('rejectedT'), nos.length, 'no'));
+    if (memFold.no) for (const [c, x] of nos) list.push(row(c, (x && x.name) || t('guest'), t('rejectedRow'), 'off', [btn('✓', 'yes', t('approve'), () => act('approve', { cid: c }))]));
+  }
   const gone = Object.entries(known).filter(([c]) => !here.has(c) && !reqs.some((q) => q.cid === c)).sort((a, b) => b[1].seen - a[1].seen).slice(0, 8);
-  if (gone.length) { list.push(h(t('notHere'))); gone.forEach(([c, k]) => list.push(row(k.name + tag(c), t('leftAgo', { t: ago(k.seen) }), 'off'))); }
+  if (gone.length) {
+    list.push(sec(t('notHere'), gone.length, 'gone'));
+    if (memFold.gone) gone.forEach(([c, k]) => list.push(row(c, k.name, t('leftAgo', { t: ago(k.seen) }), 'off', null, tag(c))));
+  }
   $('memList').replaceChildren(...list);
 }
 $('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); $('members').classList.toggle('show'); renderMembers(); };
