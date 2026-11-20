@@ -67,6 +67,16 @@
   const css = document.createElement('style');
   css.textContent = 'img.emo{width:1.2em;height:1.2em;vertical-align:-0.22em;display:inline-block;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none}';
   document.head.appendChild(css);
-  window.EMO = { url: (m) => (wanted(m) ? url(m) : null), split: (s) => [...String(s).matchAll(RX)].map((x) => x[0]) };
+  // Typing fields can't show pictures, so there we just ask the phone for the coloured version: a symbol like ♥ or ❤
+  // typed without the "emoji style" marker is drawn as a plain white glyph, so the marker (U+FE0F) is added as you type.
+  const NEEDS = /([\u2600-\u27BF\u2B05-\u2B55\u2934\u2935\u3030\u303D\u3297\u3299])(?![\uFE0E\uFE0F\u{1F3FB}-\u{1F3FF}])/gu;
+  const fix = (str) => String(str).replace(NEEDS, (ch) => (PICT.test(ch) && !EP.test(ch) ? ch + '\uFE0F' : ch));
+  document.addEventListener('input', (e) => {
+    const el = e.target; if (!el || el.nodeName !== 'INPUT' || (el.type && el.type !== 'text') || e.isComposing) return;
+    const v = el.value, nv = fix(v); if (nv === v) return;
+    const pos = el.selectionStart, before = fix(v.slice(0, pos == null ? v.length : pos)).length;
+    el.value = nv; try { el.setSelectionRange(before, before); } catch (err) {}
+  }, true);
+  window.EMO = { fix, url: (m) => (wanted(m) ? url(m) : null), split: (s) => [...String(s).matchAll(RX)].map((x) => x[0]) };
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
