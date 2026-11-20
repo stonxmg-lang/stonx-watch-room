@@ -3,6 +3,9 @@
 (function () {
   const D = {
     ar: {
+      onlyOwnerMute: 'دي لصاحب الغرفة بس', mutedYou: '🔇 صاحب الغرفة وقف عندك التفاعل والتعليقات', unmutedYou: '💬 صاحب الغرفة رجّعلك التفاعل والتعليقات',
+      mutedX: '🔇 وقفت التفاعل والتعليقات عند {n}', unmutedX: '💬 رجّعت التفاعل والتعليقات لـ{n}', mutedNow: '🔇 التفاعل والتعليقات متوقفين عندك دلوقتي',
+      tapMute: 'وقّف 🔇', tapUnmute: 'رجّع 💬', muteHead: 'التفاعل والتعليقات',
       siteTitle: 'STONX · غرف المشاهدة',
       hero: 'اتفرجوا <span>سوا</span><br>في نفس الثانية',
       heroP: 'اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، حتى لو كل واحد في بلد.',
@@ -53,6 +56,9 @@
       updating: '✨ بنحدّث الموقع… ثواني وهنكمّل', badLinkT: 'رابط غلط', badLinkP: 'افتح رابط الغرفة اللي اتبعتلك.',
     },
     en: {
+      onlyOwnerMute: 'Only the room owner can do this', mutedYou: '🔇 The room owner turned off your reactions and comments', unmutedYou: '💬 The room owner turned your reactions and comments back on',
+      mutedX: '🔇 Turned off reactions and comments for {n}', unmutedX: '💬 Turned reactions and comments back on for {n}', mutedNow: '🔇 Your reactions and comments are off right now',
+      tapMute: 'Turn off 🔇', tapUnmute: 'Turn on 💬', muteHead: 'Reactions and comments',
       siteTitle: 'STONX · Watch Rooms',
       hero: 'Watch <span>together</span><br>at the very same second',
       heroP: 'Make a room and send the link. The movie goes straight from your device to everyone else in its original quality, even if each of you is in a different country.',
@@ -103,6 +109,9 @@
       updating: '✨ Updating the site… back in a few seconds', badLinkT: 'Wrong link', badLinkP: 'Open the room link you were sent.',
     },
     tr: {
+      onlyOwnerMute: 'Bunu yalnızca oda sahibi yapabilir', mutedYou: '🔇 Oda sahibi tepki ve yorumlarını kapattı', unmutedYou: '💬 Oda sahibi tepki ve yorumlarını yeniden açtı',
+      mutedX: '🔇 {n} için tepki ve yorumlar kapatıldı', unmutedX: '💬 {n} için tepki ve yorumlar yeniden açıldı', mutedNow: '🔇 Tepki ve yorumların şu an kapalı',
+      tapMute: 'Kapat 🔇', tapUnmute: 'Aç 💬', muteHead: 'Tepki ve yorumlar',
       siteTitle: 'STONX · İzleme Odaları',
       hero: '<span>Birlikte</span> izleyin<br>aynı saniyede',
       heroP: 'Bir oda aç ve bağlantıyı gönder. Film, herkes farklı bir ülkede olsa bile orijinal kalitesiyle doğrudan senin cihazından diğerlerine gider.',
@@ -153,6 +162,9 @@
       updating: '✨ Site güncelleniyor… birkaç saniyeye devam ediyoruz', badLinkT: 'Yanlış bağlantı', badLinkP: 'Sana gönderilen oda bağlantısını aç.',
     },
     fa: {
+      onlyOwnerMute: 'این کار فقط از صاحب اتاق برمی‌آید', mutedYou: '🔇 صاحب اتاق واکنش‌ها و نظرهایت را بست', unmutedYou: '💬 صاحب اتاق واکنش‌ها و نظرهایت را دوباره باز کرد',
+      mutedX: '🔇 واکنش‌ها و نظرهای {n} بسته شد', unmutedX: '💬 واکنش‌ها و نظرهای {n} دوباره باز شد', mutedNow: '🔇 واکنش‌ها و نظرهایت فعلاً بسته است',
+      tapMute: 'بستن 🔇', tapUnmute: 'باز کردن 💬', muteHead: 'واکنش‌ها و نظرها',
       siteTitle: 'STONX · اتاق‌های تماشا',
       hero: 'با هم <span>تماشا</span> کنید<br>در همان ثانیه',
       heroP: 'یک اتاق بساز و لینکش را بفرست. فیلم با کیفیت اصلی مستقیم از دستگاه تو به بقیه می‌رسد، حتی اگر هر کدام در یک کشور باشید.',
@@ -203,6 +215,9 @@
       updating: '✨ در حال به‌روزرسانی سایت… چند ثانیه دیگر ادامه می‌دهیم', badLinkT: 'لینک اشتباه', badLinkP: 'لینک اتاقی را که برایت فرستاده‌اند باز کن.',
     },
     fr: {
+      onlyOwnerMute: 'Seul le propriétaire du salon peut faire ça', mutedYou: '🔇 Le propriétaire a coupé tes réactions et commentaires', unmutedYou: '💬 Le propriétaire a réactivé tes réactions et commentaires',
+      mutedX: '🔇 Réactions et commentaires coupés pour {n}', unmutedX: '💬 Réactions et commentaires réactivés pour {n}', mutedNow: '🔇 Tes réactions et commentaires sont coupés pour l’instant',
+      tapMute: 'Couper 🔇', tapUnmute: 'Réactiver 💬', muteHead: 'Réactions et commentaires',
       siteTitle: 'STONX · Salons de visionnage',
       hero: 'Regardez <span>ensemble</span><br>à la même seconde',
       heroP: 'Crée un salon et envoie le lien. Le film part directement de ton appareil vers les autres, en qualité d’origine, même si chacun est dans un pays différent.',
@@ -253,6 +268,9 @@
       updating: '✨ Mise à jour du site… on reprend dans quelques secondes', badLinkT: 'Lien incorrect', badLinkP: 'Ouvre le lien du salon qu’on t’a envoyé.',
     },
     ru: {
+      onlyOwnerMute: 'Это может только владелец комнаты', mutedYou: '🔇 Владелец комнаты отключил тебе реакции и комментарии', unmutedYou: '💬 Владелец комнаты снова включил тебе реакции и комментарии',
+      mutedX: '🔇 Реакции и комментарии отключены для {n}', unmutedX: '💬 Реакции и комментарии снова включены для {n}', mutedNow: '🔇 Твои реакции и комментарии сейчас отключены',
+      tapMute: 'Отключить 🔇', tapUnmute: 'Включить 💬', muteHead: 'Реакции и комментарии',
       siteTitle: 'STONX · Комнаты для просмотра',
       hero: 'Смотрите <span>вместе</span><br>секунда в секунду',
       heroP: 'Создай комнату и отправь ссылку. Фильм идёт прямо с твоего устройства к остальным в исходном качестве, даже если вы в разных странах.',

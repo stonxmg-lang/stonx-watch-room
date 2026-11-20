@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120k">
+<meta name="build" content="b20261120l">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -148,6 +148,10 @@
   .mention div { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; font-weight:800; cursor:pointer; }
   .mention div:active, .mention div.hi { background:#ffffff14; }
   .mention div i { width:8px; height:8px; border-radius:50%; background:var(--acc); flex:none; }
+  .mention div span.st { margin-inline-start:auto; font-size:12px; font-weight:700; color:var(--mut); }
+  .mention div.muted i { background:#ff6b78; }
+  .mention .head { font-size:12px; color:var(--mut); padding:6px 12px 2px; cursor:default; font-weight:700; }
+  body.muted-me #reactBtn, body.muted-me #chatBtn { opacity:.35; }
   .chatlog .at { color:#ffd166; font-weight:800; margin-inline-end:5px; }
   /* "so-and-so is typing…" sits under the last message */
   .chatlog .typing { color:#b9bec7; font-weight:600; font-size:13px; padding:4px 12px; animation:none; display:flex; align-items:center; gap:7px; }
@@ -274,6 +278,7 @@ const titleOf = () => (room.title && room.title !== 'غرفة مشاهدة' ? ro
 const hadState = !!store.get(SKEY);
 const approved = (c) => !!c && (c === room.owner || (room.ok || []).includes(c));
 const isBoss = () => !!room.owner && (cid === room.owner || cid === room.boss);
+const isMuted = (c) => !!c && (room.mute || []).includes(c);   // the owner switched off this person's reactions and comments
 let waiting = false;   // I asked to come in and nobody has said yes yet
 const mySince = (() => { const k = 'wr2_since_' + roomId; let v = 0; try { v = +sessionStorage.getItem(k); if (!v) { v = Date.now(); sessionStorage.setItem(k, v); } } catch (e) { v = Date.now(); } return v; })();
 
@@ -426,8 +431,11 @@ async function loadHave() {
 // ---------------- the shared room state (owned by the master) ----------------
 function applyRoom(next, from) {
   const movieChanged = (next.movie && next.movie.id) !== (room.movie && room.movie.id);
-  const oldReq = new Set((room.req || []).map((x) => x.cid));
+  const oldReq = new Set((room.req || []).map((x) => x.cid)), wasMuted = isMuted(cid);
   room = next; saveRoom();
+  if (isMuted(cid) !== wasMuted) { toast(t(isMuted(cid) ? 'mutedYou' : 'unmutedYou')); if (isMuted(cid)) muteClose(); }
+  document.body.classList.toggle('muted-me', isMuted(cid));
+  for (const p of live()) if (isMuted(p.cid)) typers.delete(p.id);
   if (!isMaster) for (const p of live()) if (p.id !== MASTER_ID && room.owner && !approved(p.cid)) { peers.delete(p.id); try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} refreshConn(); }
   if (isBoss()) for (const r of room.req || []) if (!oldReq.has(r.cid)) { toast(t('wantsIn', { n: r.name })); ding(); }
   setPeerPill();
@@ -451,7 +459,7 @@ function act(action, extra = {}) {  // anyone: request a change
 }
 function handleAct(a, from) {
   const who = from ? from.cid : cid;
-  if (['approve', 'reject', 'remove'].includes(a.action)) return door(a, who, from);
+  if (['approve', 'reject', 'remove', 'mute', 'unmute'].includes(a.action)) return door(a, who, from);
   const T = total(), pos = Math.min(Math.max(position(), 0), T);
   commit((r) => {
     if (a.action === 'play') { if (!T) return; const from = pos >= T - 0.5 ? 0 : pos; r.status = 'playing'; r.base = from; r.startedAt = now() + (a.auto ? 700 : 1500); r.auto = false; delete r.upd; }
@@ -486,6 +494,11 @@ function door(a, who, from) {
     commit((r) => { r.ok = (r.ok || []).filter((x) => x !== target); });
     if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(t('removed', { n: p.name })); }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss();
+  }
+  if (a.action === 'mute' || a.action === 'unmute') {
+    if (who !== room.owner) return reply('onlyOwnerMute');   // this one is the owner's alone, not the stand-in's
+    if (!target || target === room.owner) return;
+    commit((r) => { const m = new Set(r.mute || []); if (a.action === 'mute') m.add(target); else m.delete(target); r.mute = [...m]; });
   }
 }
 // people waiting at the door, as the room sees them
@@ -605,7 +618,7 @@ function renderMembers() {
     if (acts && acts.length) { const a = document.createElement('div'); a.className = 'acts'; a.append(...acts); r.append(a); }
     return r;
   };
-  const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '');
+  const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '') + (isMuted(c) ? ' 🔇' : '');
   const role = (c) => (c === room.owner ? t('owner') : c === room.boss ? t('boss') : '');
   const boss = isBoss(), list = [], h = (s) => { const x = document.createElement('h4'); x.textContent = s; return x; };
   const reqs = boss ? (room.req || []) : [];
@@ -768,6 +781,7 @@ function onCtl(m, p, c) {
   if (m.t === 'have') { p.busy = !!m.busy; p.mid = m.mid; p.have = decodeSet(m.have); p.pend = new Set(Array.isArray(m.pend) ? m.pend : []); pumpWants(); return; }
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
+  if ((m.t === 'react' || m.t === 'chat' || m.t === 'typing') && isMuted(p.cid)) { typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
   if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
   if (m.t === 'typing') { if (m.on) typers.set(p.id, { name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
@@ -1143,7 +1157,8 @@ function setEditing(on) { $('tray').classList.toggle('editing', on); if (!on) em
 let burstT = null, press = null;
 function stopBurst() { clearTimeout(burstT); burstT = null; if (press) { clearTimeout(press.t); press = null; } }
 const editing = () => $('tray').classList.contains('editing');
-const react1 = (e) => { flyEmoji(e); send({ t: 'react', e }); };
+const react1 = (e) => { if (isMuted(cid)) { stopBurst(); return toast(t('mutedNow')); } flyEmoji(e); send({ t: 'react', e }); };
+function muteClose() { stopBurst(); $('tray').classList.remove('show'); $('chatbar').classList.remove('show'); try { $('chatIn').blur(); } catch (e) {} typingOff(); hideMention(); }
 function updateReactBtn() { $('reactBtn').textContent = reacts[0] || '😊'; }
 function startBurst(e) {
   clearTimeout(burstT);
@@ -1186,9 +1201,9 @@ emojiIn.oninput = () => {
 reacts.forEach((e) => $('trayList').appendChild(emojiButton(e)));
 $('tray').appendChild(editBtn);
 updateReactBtn();
-$('reactBtn').onclick = (e) => { e.stopPropagation(); $('chatbar').classList.remove('show'); setEditing(false); $('tray').classList.toggle('show'); };
+$('reactBtn').onclick = (e) => { e.stopPropagation(); if (isMuted(cid)) return toast(t('mutedNow')); $('chatbar').classList.remove('show'); setEditing(false); $('tray').classList.toggle('show'); };
 $('chatBtn').onclick = (e) => {
-  e.stopPropagation(); $('tray').classList.remove('show');
+  e.stopPropagation(); if (isMuted(cid)) return toast(t('mutedNow')); $('tray').classList.remove('show');
   const open = $('chatbar').classList.toggle('show'); if (open) $('chatIn').focus();
 };
 // ---- "so-and-so is typing…": goes only to whoever will get the message (the people mentioned, or everyone)
@@ -1205,6 +1220,8 @@ setInterval(drawTyping, 1000);
 let typingTo = null, typingAt = 0;   // ids told "I'm typing", and when
 function typingOff() { if (typingTo) { live().filter((p) => typingTo.has(p.id)).forEach((p) => sendTo(p, { t: 'typing', on: false })); typingTo = null; } }
 function typingPing() {
+  if (isMuted(cid)) return typingOff();
+  if (cid === room.owner && /(^|\s)#\S*$/.test($('chatIn').value)) return typingOff();   // the owner's # command isn't chat
   if (!$('chatIn').value.trim()) return typingOff();
   const to = picked.size ? live().filter((p) => picked.has(p.cid)) : live(), ids = new Set(to.map((p) => p.id));
   if (typingTo) for (const p of live()) if (typingTo.has(p.id) && !ids.has(p.id)) sendTo(p, { t: 'typing', on: false });   // mention list changed
@@ -1217,6 +1234,7 @@ $('chatIn').addEventListener('blur', typingOff);
 $('chatbar').onsubmit = (e) => {
   e.preventDefault();
   const msg = $('chatIn').value.trim().slice(0, 120); if (!msg) return;
+  if (isMuted(cid)) { muteClose(); return toast(t('mutedNow')); }
   if (picked.size) {
     const to = live().filter((p) => picked.has(p.cid));
     if (!to.length) return toast(t('pickedGone'));
@@ -1240,21 +1258,32 @@ function hideMention() { atFrom = -1; $('mention').classList.remove('show'); }
 function pickMention(p) {
   const el = $('chatIn'), v = el.value, end = el.selectionStart ?? v.length;
   el.value = v.slice(0, atFrom) + v.slice(end); el.setSelectionRange(atFrom, atFrom);
+  if (atMode === '#') {
+    if (cid === room.owner) { const on = isMuted(p.cid); act(on ? 'unmute' : 'mute', { cid: p.cid }); toast(t(on ? 'unmutedX' : 'mutedX', { n: p.name || t('guest') })); }
+    hideMention(); el.focus(); typingPing(); return;
+  }
   picked.set(p.cid, p.name || t('guest')); drawChips(); hideMention(); el.focus();
 }
+let atMode = '@';   // '@' picks who a message goes to; '#' (owner only) switches someone's reactions and comments off/on
 function showMention() {
-  const el = $('chatIn'), v = el.value, caret = el.selectionStart ?? v.length, at = v.lastIndexOf('@', caret - 1);
+  const el = $('chatIn'), v = el.value, caret = el.selectionStart ?? v.length;
+  const owner = cid === room.owner, a1 = v.lastIndexOf('@', caret - 1), a2 = owner ? v.lastIndexOf('#', caret - 1) : -1;
+  const at = Math.max(a1, a2);
   if (at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return hideMention();
+  atMode = v[at];
   const q = v.slice(at + 1, caret).trim().toLowerCase();
-  atList = live().filter((p) => !picked.has(p.cid) && (p.name || t('guest')).toLowerCase().includes(q));
+  atList = live().filter((p) => (atMode === '#' ? p.cid !== room.owner : !picked.has(p.cid)) && (p.name || t('guest')).toLowerCase().includes(q));
   if (!atList.length) return hideMention();
   atFrom = at; atHi = Math.min(atHi, atList.length - 1);
-  $('mention').replaceChildren(...atList.map((p, k) => {
+  const rows = atList.map((p, k) => {
     const r = document.createElement('div'), i = document.createElement('i'), nm = document.createElement('span');
-    nm.textContent = p.name || t('guest'); r.append(i, nm); if (k === atHi) r.className = 'hi';
+    nm.textContent = p.name || t('guest'); r.append(i, nm); r.className = (k === atHi ? 'hi' : '') + (isMuted(p.cid) ? ' muted' : '');
+    if (atMode === '#') { const st = document.createElement('span'); st.className = 'st'; st.textContent = isMuted(p.cid) ? t('tapUnmute') : t('tapMute'); r.append(st); }
     r.onpointerdown = (e) => { e.preventDefault(); pickMention(p); };   // keep the keyboard open
     return r;
-  }));
+  });
+  if (atMode === '#') { const hd = document.createElement('div'); hd.className = 'head'; hd.textContent = t('muteHead'); rows.unshift(hd); }
+  $('mention').replaceChildren(...rows);
   $('mention').classList.add('show');
 }
 $('chatIn').addEventListener('input', showMention);
@@ -1338,6 +1367,7 @@ async function join() {
   joined = true; muted = false; show(0);
   keepAwake(); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
   $('gate').style.display = 'none';
+  document.body.classList.toggle('muted-me', isMuted(cid));
   if (!room.owner && store.get('wr2_own_' + roomId)) { room.owner = cid; room.ok = [cid]; saveRoom(); }   // I made this room
   await loadHave();
   connect();
