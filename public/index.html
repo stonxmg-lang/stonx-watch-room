@@ -49,7 +49,8 @@
   .join { display:flex; gap:8px; } .join input { flex:1; min-width:0; } .join button { width:auto; padding:0 20px; flex:none; }
   .or { display:flex; align-items:center; gap:10px; color:#5d636e; font-size:12px; margin:2px 0; }
   .or::before, .or::after { content:''; flex:1; height:1px; background:var(--line); }
-  .err { font-size:12.5px; color:#ff6b78; display:none; } .err.show { display:block; }
+  .err { font-size:12.5px; color:#ff6b78; display:none; line-height:1.7; } .err.show { display:block; }
+  input:disabled, button:disabled { opacity:.5; cursor:not-allowed; }
 
   /* features */
   .feat { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -83,7 +84,7 @@
       <input id="code" placeholder="كود الغرفة أو الرابط" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button class="sec" id="join">ادخل</button>
     </div>
-    <span class="err" id="err">الكود ده مش مظبوط، اتأكد منه وجرّب تاني.</span>
+    <span class="err" id="err"></span>
   </section>
 
   <section class="feat">
@@ -94,20 +95,72 @@
   </section>
 </main>
 <footer>STONX · WATCH TOGETHER</footer>
+<script src="/vendor/peerjs.min.js" defer></script>
 <script>
 const $ = (id) => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
 $('create').onclick = () => {
   const code = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
   try { const t = $('title').value.trim(); if (t) localStorage.setItem('wr2_title_' + code, t); } catch (e) {}
-  location.href = '/r/' + code;
+  location.href = '/r/' + code + location.search;
 };
-$('join').onclick = () => {
-  const v = $('code').value.trim(); const m = v.match(/([a-z0-9]{4,12})\/?$/i);
-  if (m) location.href = '/r/' + m[1].toLowerCase(); else $('err').classList.add('show');
+// ---- guessing room codes: 3 wrong tries and typing a code is locked for a while (5 min, then 30 min if it goes on).
+// "wrong" = no room with that code is open right now (checked through the free PeerJS broker, not Vercel).
+const GKEY = 'wr_guard';
+const guard = () => { try { return JSON.parse(localStorage.getItem(GKEY)) || {}; } catch (e) { return {}; } };
+const saveGuard = (g) => { try { localStorage.setItem(GKEY, JSON.stringify(g)); } catch (e) {} };
+const LIMIT = 3, LOCKS = [5, 30];   // minutes
+function lockLeft() { const g = guard(); return Math.max(0, (g.until || 0) - Date.now()); }
+function say(t, ok) { const e = $('err'); e.textContent = t; e.classList.toggle('show', !!t); e.style.color = ok ? '#8a909c' : ''; }
+let lockT = null;
+function showLock() {
+  clearInterval(lockT);
+  const tick = () => {
+    const ms = lockLeft(), off = ms > 0;
+    $('code').disabled = $('join').disabled = off;
+    if (!off) { clearInterval(lockT); say(''); return; }
+    const sec = Math.ceil(ms / 1000), m = Math.floor(sec / 60);
+    say(`🔒 كتبت كود غلط ${LIMIT} مرات. جرّب تاني بعد ${m ? m + ':' + String(sec % 60).padStart(2, '0') + ' دقيقة' : sec + ' ثانية'}.`);
+  };
+  tick(); lockT = setInterval(tick, 1000);
+}
+function wrong() {
+  const g = guard();
+  if (Date.now() - (g.last || 0) > 24 * 3600e3) g.level = 0;   // a calm day forgets earlier lockouts
+  g.fails = (g.fails || 0) + 1; g.last = Date.now();
+  if (g.fails >= LIMIT) { g.until = Date.now() + LOCKS[Math.min(g.level || 0, LOCKS.length - 1)] * 60000; g.level = (g.level || 0) + 1; g.fails = 0; saveGuard(g); showLock(); return; }
+  saveGuard(g);
+  say(`مفيش غرفة مفتوحة بالكود ده. فاضلك ${LIMIT - g.fails} ${LIMIT - g.fails === 1 ? 'محاولة' : 'محاولات'}.`);
+}
+// is someone in that room right now? the room's first person holds the name 'stonx-wr2-<code>' on the broker
+function roomOpen(code) {
+  return new Promise((ok) => {
+    if (typeof Peer === 'undefined') return ok(null);
+    const o = { debug: 0 }, ps = qs.get('ps');
+    if (ps) { const [host, port] = ps.split(':'); Object.assign(o, { host, port: +port, path: '/', secure: false, config: { iceServers: [] } }); }
+    let done = false; const end = (v) => { if (done) return; done = true; clearTimeout(t); try { p.destroy(); } catch (e) {} ok(v); };
+    const t = setTimeout(() => end(null), 9000);   // broker unreachable: don't count it against anyone
+    const p = new Peer(undefined, o);
+    p.on('open', () => { const c = p.connect('stonx-wr2-' + code, { label: 'probe' }); c.on('open', () => end(true)); });
+    p.on('error', (e) => end(e.type === 'peer-unavailable' ? false : null));
+  });
+}
+$('join').onclick = async () => {
+  if (lockLeft()) return showLock();
+  const v = $('code').value.trim(); const m = v.match(/(?:^|\/)([a-z0-9]{4,12})\/?$/i);
+  if (!m) return v ? wrong() : say('اكتب كود الغرفة أو الصق الرابط.');
+  const code = m[1].toLowerCase();
+  $('join').disabled = true; $('join').textContent = '…'; say('بنتأكد من الكود…', true);
+  const open = await roomOpen(code);
+  $('join').disabled = false; $('join').textContent = 'ادخل';
+  if (open === false) return wrong();
+  const g = guard(); g.fails = 0; saveGuard(g);
+  location.href = '/r/' + code + location.search;
 };
-$('code').oninput = () => $('err').classList.remove('show');
+$('code').oninput = () => { if (!lockLeft()) say(''); };
 $('code').onkeydown = (e) => e.key === 'Enter' && $('join').click();
 $('title').onkeydown = (e) => e.key === 'Enter' && $('create').click();
+if (lockLeft()) showLock();
 </script>
 </body>
 </html>

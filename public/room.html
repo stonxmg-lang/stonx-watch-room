@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120g">
+<meta name="build" content="b20261120h">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -141,6 +141,12 @@
   .mention div:active, .mention div.hi { background:#ffffff14; }
   .mention div i { width:8px; height:8px; border-radius:50%; background:var(--acc); flex:none; }
   .chatlog .at { color:#ffd166; font-weight:800; margin-inline-end:5px; }
+  /* "so-and-so is typing…" sits under the last message */
+  .chatlog .typing { color:#b9bec7; font-weight:600; font-size:13px; padding:4px 12px; animation:none; display:flex; align-items:center; gap:7px; }
+  .chatlog .typing:empty { display:none; }
+  .chatlog .typing i { display:inline-flex; gap:3px; } .chatlog .typing i b { width:5px; height:5px; border-radius:50%; background:#5ff09a; animation:dot 1.2s infinite; }
+  .chatlog .typing i b:nth-child(2) { animation-delay:.2s; } .chatlog .typing i b:nth-child(3) { animation-delay:.4s; }
+  @keyframes dot { 0%,60%,100% { opacity:.25; transform:translateY(0); } 30% { opacity:1; transform:translateY(-3px); } }
   @media (max-width:520px) { input[type=range].vol { display:none; } .ib { width:36px; } .time { font-size:12px; margin-inline:2px; } }
   /* portrait phones: let the top pills wrap onto a second line and squeeze the bottom row, so nothing falls off screen */
   @media (max-width:600px) {
@@ -219,7 +225,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="fx" id="fx"></div>
-<div class="chatlog" id="chatlog"></div>
+<div class="chatlog" id="chatlog"><div class="typing" id="typing"></div></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
 <div class="mention" id="mention"></div>
 <form class="chatbar" id="chatbar" autocomplete="off"><div class="chips" id="chips"></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
@@ -530,7 +536,8 @@ function wireDat(c) {
   c.on('close', () => { if (p.dat === c) p.dat = null; });
   c.on('error', () => {});
 }
-const onConn = (c) => (c.label === 'data' ? wireDat(c) : wireCtl(c));
+// 'probe' = the home page checking that this room is open before letting someone in; nothing else is said
+const onConn = (c) => (c.label === 'probe' ? c.on('open', () => setTimeout(() => c.close(), 300)) : c.label === 'data' ? wireDat(c) : wireCtl(c));
 function linkTo(id) {
   if (!peer || peer.destroyed || !peer.open || id === peer.id || peers.has(id)) return;
   wireCtl(peer.connect(id, { label: 'ctl', reliable: true, serialization: 'json' }));
@@ -541,6 +548,7 @@ function dropPeer(p) {
   try { p.dat && p.dat.close(); } catch (e) {}
   for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i);
   if (p.ready) { toast(`${p.name || 'ضيف'} خرج من الغرفة`); remember(p); }
+  typers.delete(p.id); drawTyping();
   refreshConn(); roster(); checkWaiting(); pumpWants();
   if (!isMaster && p.id === MASTER_ID) setTimeout(connect, 1500);   // the master left: someone takes over
 }
@@ -637,7 +645,8 @@ function onCtl(m, p, c) {
   if (m.t === 'nope') { p.have.delete(m.i); const f = inflight.get(m.i); if (f && f.from === p.id) inflight.delete(m.i); pumpWants(); return; }
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
-  if (m.t === 'chat') { if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
+  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
+  if (m.t === 'typing') { if (m.on) typers.set(p.id, { name: p.name || 'ضيف', until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -993,8 +1002,8 @@ function addChat(text, mine, who, priv) {
   d.append(n);
   if (priv) { const a = document.createElement('span'); a.className = 'at'; a.textContent = '@'; d.append(a); }   // a private message, just for the people mentioned
   d.append(document.createTextNode(text));
-  const log = $('chatlog'); log.appendChild(d);
-  while (log.children.length > 5) log.firstChild.remove();
+  const log = $('chatlog'); log.insertBefore(d, $('typing'));
+  while (log.children.length > 6) log.firstChild.remove();
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
 }
 const editBtn = document.createElement('button'), emojiIn = document.createElement('input');
@@ -1054,6 +1063,29 @@ $('chatBtn').onclick = (e) => {
   e.stopPropagation(); $('tray').classList.remove('show');
   const open = $('chatbar').classList.toggle('show'); if (open) $('chatIn').focus();
 };
+// ---- "so-and-so is typing…": goes only to whoever will get the message (the people mentioned, or everyone)
+const typers = new Map();   // peer id -> { name, until }
+function drawTyping() {
+  const t = Date.now(); for (const [k, v] of typers) if (v.until < t) typers.delete(k);
+  const n = [...typers.values()].map((v) => v.name), el = $('typing');
+  if (!n.length) { el.replaceChildren(); return; }
+  const txt = n.length === 1 ? `${n[0]} بيكتب…` : n.length === 2 ? `${n[0]} و${n[1]} بيكتبوا…` : `${n.length} بيكتبوا…`;
+  const dots = document.createElement('i'); dots.innerHTML = '<b></b><b></b><b></b>';
+  el.replaceChildren(dots, document.createTextNode(txt));
+}
+setInterval(drawTyping, 1000);
+let typingTo = null, typingAt = 0;   // ids told "I'm typing", and when
+function typingOff() { if (typingTo) { live().filter((p) => typingTo.has(p.id)).forEach((p) => sendTo(p, { t: 'typing', on: false })); typingTo = null; } }
+function typingPing() {
+  if (!$('chatIn').value.trim()) return typingOff();
+  const to = picked.size ? live().filter((p) => picked.has(p.cid)) : live(), ids = new Set(to.map((p) => p.id));
+  if (typingTo) for (const p of live()) if (typingTo.has(p.id) && !ids.has(p.id)) sendTo(p, { t: 'typing', on: false });   // mention list changed
+  const fresh = !typingTo || [...ids].some((i) => !typingTo.has(i));
+  if (fresh || Date.now() - typingAt > 3000) { to.forEach((p) => sendTo(p, { t: 'typing', on: true })); typingAt = Date.now(); }
+  typingTo = ids;
+}
+$('chatIn').addEventListener('input', typingPing);
+$('chatIn').addEventListener('blur', typingOff);
 $('chatbar').onsubmit = (e) => {
   e.preventDefault();
   const t = $('chatIn').value.trim().slice(0, 120); if (!t) return;
@@ -1063,7 +1095,7 @@ $('chatbar').onsubmit = (e) => {
     to.forEach((p) => sendTo(p, { t: 'chat', text: t, to: true }));
     addChat(t, true, '', true);
   } else { addChat(t, true); send({ t: 'chat', text: t }); }
-  $('chatIn').value = ''; picked.clear(); drawChips(); hideMention();
+  typingTo = null; $('chatIn').value = ''; picked.clear(); drawChips(); hideMention();
 };
 // ---- @mentions: type @ to pick people; the message then goes only to them (with an @ before it, no names)
 const picked = new Map();   // cid -> name
