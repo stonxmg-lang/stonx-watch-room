@@ -11,6 +11,7 @@
 <link rel="shortcut icon" href="/favicon.ico">
 <link rel="icon" href="/icon-192.webp">
 <link rel="manifest" href="/manifest.json">
+<script src="/i18n.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#07080b; --fg:#eef0f3; --mut:#8a909c; --acc:#38e07b; --line:#1d2129; --card:#0e1015; --field:#090b0f; }
@@ -41,7 +42,8 @@
   input:focus { border-color:#38e07b88; }
   input::placeholder { color:#5d636e; }
   #code { direction:ltr; text-align:right; }
-  #code:placeholder-shown { direction:rtl; }
+  [dir=rtl] #code:placeholder-shown { direction:rtl; }
+  [dir=ltr] #code { text-align:left; }
   button { font:inherit; font-weight:800; font-size:16px; height:50px; border-radius:13px; border:0; cursor:pointer; width:100%; transition:transform .1s, filter .15s; }
   button:active { transform:scale(.98); }
   .pri { background:var(--acc); color:#04140a; box-shadow:0 8px 26px #38e07b2e; }
@@ -70,34 +72,35 @@
   </header>
 
   <section class="hero">
-    <h1>اتفرجوا <span>سوا</span><br>في نفس الثانية</h1>
-    <p>اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، حتى لو كل واحد في بلد.</p>
+    <h1 data-i18n-html="hero">اتفرجوا <span>سوا</span><br>في نفس الثانية</h1>
+    <p data-i18n="heroP">اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، حتى لو كل واحد في بلد.</p>
   </section>
 
   <section class="card">
-    <span class="sec-t">غرفة جديدة</span>
-    <input id="title" placeholder="اسم الغرفة (اختياري)" maxlength="40" autocomplete="off">
-    <button class="pri" id="create">اعمل غرفة جديدة</button>
-    <div class="or">أو</div>
-    <span class="sec-t">عندك رابط أو كود؟</span>
+    <span class="sec-t" data-i18n="newRoom">غرفة جديدة</span>
+    <input id="title" placeholder="اسم الغرفة (اختياري)" data-i18n-ph="roomNamePh" maxlength="40" autocomplete="off">
+    <button class="pri" id="create" data-i18n="createBtn">اعمل غرفة جديدة</button>
+    <div class="or" data-i18n="or">أو</div>
+    <span class="sec-t" data-i18n="haveCode">عندك رابط أو كود؟</span>
     <div class="join">
-      <input id="code" placeholder="كود الغرفة أو الرابط" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <button class="sec" id="join">ادخل</button>
+      <input id="code" placeholder="كود الغرفة أو الرابط" data-i18n-ph="codePh" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="sec" id="join" data-i18n="enter">ادخل</button>
     </div>
     <span class="err" id="err"></span>
   </section>
 
   <section class="feat">
-    <div class="f"><i>👥</i><div><b>لحد 5 أشخاص</b><small>كل اللي في الغرفة بيتفرجوا مع بعض</small></div></div>
-    <div class="f"><i>🎮</i><div><b>الكل بيتحكم</b><small>تشغيل وإيقاف وتقديم للكل</small></div></div>
-    <div class="f"><i>🎬</i><div><b>أي فيلم</b><small>أي طول وأي حجم بجودته</small></div></div>
-    <div class="f"><i>🔒</i><div><b>من جهاز لجهاز</b><small>من غير ما يترفع على سيرفر</small></div></div>
+    <div class="f"><i>👥</i><div><b data-i18n="f1b">لحد 5 أشخاص</b><small data-i18n="f1s">كل اللي في الغرفة بيتفرجوا مع بعض</small></div></div>
+    <div class="f"><i>🎮</i><div><b data-i18n="f2b">الكل بيتحكم</b><small data-i18n="f2s">تشغيل وإيقاف وتقديم للكل</small></div></div>
+    <div class="f"><i>🎬</i><div><b data-i18n="f3b">أي فيلم</b><small data-i18n="f3s">أي طول وأي حجم بجودته</small></div></div>
+    <div class="f"><i>🔒</i><div><b data-i18n="f4b">من جهاز لجهاز</b><small data-i18n="f4s">من غير ما يترفع على سيرفر</small></div></div>
   </section>
 </main>
 <footer>STONX · WATCH TOGETHER</footer>
 <script src="/vendor/peerjs.min.js" defer></script>
 <script>
 const $ = (id) => document.getElementById(id);
+const { t } = window.I18N; document.title = t('siteTitle');
 const qs = new URLSearchParams(location.search);
 $('create').onclick = () => {
   const code = [...crypto.getRandomValues(new Uint8Array(6))].map((b) => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
@@ -120,7 +123,7 @@ function showLock() {
     $('code').disabled = $('join').disabled = off;
     if (!off) { clearInterval(lockT); say(''); return; }
     const sec = Math.ceil(ms / 1000), m = Math.floor(sec / 60);
-    say(`🔒 كتبت كود غلط ${LIMIT} مرات. جرّب تاني بعد ${m ? m + ':' + String(sec % 60).padStart(2, '0') + ' دقيقة' : sec + ' ثانية'}.`);
+    say(t('locked', { n: LIMIT, t: m ? t('mins', { t: m + ':' + String(sec % 60).padStart(2, '0') }) : t('secs', { t: sec }) }));
   };
   tick(); lockT = setInterval(tick, 1000);
 }
@@ -130,7 +133,7 @@ function wrong() {
   g.fails = (g.fails || 0) + 1; g.last = Date.now();
   if (g.fails >= LIMIT) { g.until = Date.now() + LOCKS[Math.min(g.level || 0, LOCKS.length - 1)] * 60000; g.level = (g.level || 0) + 1; g.fails = 0; saveGuard(g); showLock(); return; }
   saveGuard(g);
-  say(`مفيش غرفة مفتوحة بالكود ده. فاضلك ${LIMIT - g.fails} ${LIMIT - g.fails === 1 ? 'محاولة' : 'محاولات'}.`);
+  say(LIMIT - g.fails === 1 ? t('noRoom1') : t('noRoomN', { n: LIMIT - g.fails }));
 }
 // is someone in that room right now? the room's first person holds the name 'stonx-wr2-<code>' on the broker
 function roomOpen(code) {
@@ -148,11 +151,11 @@ function roomOpen(code) {
 $('join').onclick = async () => {
   if (lockLeft()) return showLock();
   const v = $('code').value.trim(); const m = v.match(/(?:^|\/)([a-z0-9]{4,12})\/?$/i);
-  if (!m) return v ? wrong() : say('اكتب كود الغرفة أو الصق الرابط.');
+  if (!m) return v ? wrong() : say(t('typeCode'));
   const code = m[1].toLowerCase();
-  $('join').disabled = true; $('join').textContent = '…'; say('بنتأكد من الكود…', true);
+  $('join').disabled = true; $('join').textContent = '…'; say(t('checking'), true);
   const open = await roomOpen(code);
-  $('join').disabled = false; $('join').textContent = 'ادخل';
+  $('join').disabled = false; $('join').textContent = t('enter');
   if (open === false) return wrong();
   const g = guard(); g.fails = 0; saveGuard(g);
   location.href = '/r/' + code + location.search;

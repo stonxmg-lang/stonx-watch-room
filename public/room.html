@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="build" content="b20261120i">
+<meta name="build" content="b20261120j">
 <title>STONX · غرفة مشاهدة</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -12,6 +12,7 @@
 <link rel="shortcut icon" href="/favicon.ico">
 <link rel="icon" href="/icon-192.webp">
 <link rel="manifest" href="/manifest.json">
+<script src="/i18n.js"></script>
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -129,7 +130,8 @@
   .chatbar { inset-inline:10px; gap:8px; }
   .chatbar input { flex:1; min-width:0; font:inherit; font-size:16px; background:#0b0d12ee; border:1px solid var(--line); color:var(--fg); border-radius:99px; padding:0 16px; height:48px; }
   .chatbar button { flex:none; width:48px; height:48px; border:0; border-radius:50%; background:var(--acc); color:#04140a; cursor:pointer; display:grid; place-items:center; align-self:center; }
-  .chatbar button svg { width:24px; height:24px; fill:currentColor; transform:scaleX(-1); }
+  .chatbar button svg { width:24px; height:24px; fill:currentColor; }
+  [dir=rtl] .chatbar button svg { transform:scaleX(-1); }
   .chatbar button:active { filter:brightness(.9); }
   body:has(.chatbar.show) .chatlog { bottom:max(160px,calc(env(safe-area-inset-bottom) + 154px)); }
   /* @mentions: picked people show as small chips in the chat bar; a message with chips goes to them only */
@@ -176,29 +178,29 @@
 
 <div class="top">
   <span class="brand">STONX</span>
-  <span class="title" id="title">غرفة مشاهدة</span>
-  <span class="pill live off" id="live"><i></i><span id="liveTxt">مستني</span></span>
+  <span class="title" id="title" data-i18n="roomTitle">غرفة مشاهدة</span>
+  <span class="pill live off" id="live"><i></i><span id="liveTxt" data-i18n="waitingPill">مستني</span></span>
   <span class="pill" id="netPill" style="display:none;cursor:default"></span>
   <button class="pill" id="prepPill" style="display:none"></button>
-  <button class="pill" id="memBtn">👥 الأعضاء</button>
-  <button class="pill" id="menuBtn">⚙️ الإعدادات</button>
+  <button class="pill" id="memBtn">👥</button>
+  <button class="pill" id="menuBtn">⚙️ <span data-i18n="settings">الإعدادات</span></button>
 </div>
 
 <div class="panel" id="members">
   <div id="memList"></div>
 </div>
-<button class="sound" id="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
+<button class="sound" id="soundBtn" data-i18n="soundBtn">🔊 دوس هنا علشان الصوت يشتغل</button>
 <div class="panel menu" id="menu">
-  <button id="shareBtn">🔗 شارك رابط الغرفة</button>
-  <h3 style="margin-top:6px">الفيلم</h3>
-  <button id="pickBtn">🎬 اختار فيلم من جهازي</button>
-  <button class="dan" id="deleteBtn">🗑️ امسح الفيلم</button>
-  <p class="hint">الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم وصل للكل».</p>
+  <button id="shareBtn" data-i18n="share">🔗 شارك رابط الغرفة</button>
+  <h3 style="margin-top:6px" data-i18n="movie">الفيلم</h3>
+  <button id="pickBtn" data-i18n="pick">🎬 اختار فيلم من جهازي</button>
+  <button class="dan" id="deleteBtn" data-i18n="del">🗑️ امسح الفيلم</button>
+  <p class="hint" data-i18n="hint">الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، من غير أي سيرفر. التشغيل بيبدأ بعد ثواني، والباقي بيتحمّل في الخلفية وانتوا بتتفرجوا. خلي الصفحة مفتوحة لحد ما يظهر «✅ الفيلم وصل للكل».</p>
 </div>
 <input type="file" id="file" accept="video/*,.mkv" hidden>
 
 <div class="up" id="up">
-  <div class="l1" id="upTitle">بنجهّز…</div>
+  <div class="l1" id="upTitle" data-i18n="preparing">بنجهّز…</div>
   <div class="pb" id="pb"><b id="pbB"></b></div>
   <div class="l2" id="upSub"></div>
 </div>
@@ -206,16 +208,16 @@
 <div class="bar" id="bar">
   <div class="seekwrap"><div class="track"><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
   <div class="row">
-    <button class="ib big" id="playBtn" aria-label="تشغيل"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
-    <button class="ib" id="back10" aria-label="رجوع 10"><small>−10</small></button>
-    <button class="ib" id="fwd10" aria-label="تقديم 10"><small>+10</small></button>
+    <button class="ib big" id="playBtn" aria-label="تشغيل" data-i18n-aria="aPlay"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="ib" id="back10" aria-label="رجوع 10" data-i18n-aria="aBack"><small>−10</small></button>
+    <button class="ib" id="fwd10" aria-label="تقديم 10" data-i18n-aria="aFwd"><small>+10</small></button>
     <span class="time" id="time">0:00 / 0:00</span>
     <span class="grow"></span>
-    <button class="ib" id="reactBtn" aria-label="تفاعل" style="font-size:22px">😊</button>
-    <button class="ib" id="chatBtn" aria-label="شات" style="font-size:21px">💬</button>
-    <button class="ib" id="muteBtn" aria-label="الصوت"><svg viewBox="0 0 24 24" id="volIcon"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg></button>
+    <button class="ib" id="reactBtn" aria-label="تفاعل" data-i18n-aria="aReact" style="font-size:22px">😊</button>
+    <button class="ib" id="chatBtn" aria-label="شات" data-i18n-aria="aChat" style="font-size:21px">💬</button>
+    <button class="ib" id="muteBtn" aria-label="الصوت" data-i18n-aria="aSound"><svg viewBox="0 0 24 24" id="volIcon"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg></button>
     <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="1">
-    <button class="ib" id="fsBtn" aria-label="ملء الشاشة"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+    <button class="ib" id="fsBtn" aria-label="ملء الشاشة" data-i18n-aria="aFull"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
   </div>
 </div>
 
@@ -223,17 +225,17 @@
 
 <div class="layer gate" id="gate">
   <span class="brand">STONX · WATCH TOGETHER</span>
-  <h1 id="gateTitle">غرفة مشاهدة</h1>
-  <p id="gateSub">الفيلم بيروح من جهاز لجهاز مباشرة، وكلكم بتشوفوا نفس اللقطة في نفس الثانية.</p>
-  <input id="nameIn" placeholder="اسمك" maxlength="24">
-  <button class="btn" id="joinBtn">ادخل الغرفة ▶</button>
+  <h1 id="gateTitle" data-i18n="roomTitle">غرفة مشاهدة</h1>
+  <p id="gateSub" data-i18n="gateSub">الفيلم بيروح من جهاز لجهاز مباشرة، وكلكم بتشوفوا نفس اللقطة في نفس الثانية.</p>
+  <input id="nameIn" placeholder="اسمك" data-i18n-ph="namePh" maxlength="24">
+  <button class="btn" id="joinBtn" data-i18n="joinBtn">ادخل الغرفة ▶</button>
 </div>
 <div class="toast" id="toast"></div>
 <div class="fx" id="fx"></div>
 <div class="chatlog" id="chatlog"><div class="typing" id="typing"></div></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
 <div class="mention" id="mention"></div>
-<form class="chatbar" id="chatbar" autocomplete="off"><div class="chips" id="chips"></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" enterkeyhint="send"><button type="submit" aria-label="إرسال"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
+<form class="chatbar" id="chatbar" autocomplete="off"><div class="chips" id="chips"></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" data-i18n-ph="chatPh" enterkeyhint="send"><button type="submit" aria-label="إرسال" data-i18n-aria="aSend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
 
 <script src="/vendor/peerjs.min.js"></script>
 <script type="module">
@@ -248,6 +250,7 @@
 //  • If either side runs dry, both pause and resume together automatically.
 // =====================================================================
 const $ = (id) => document.getElementById(id);
+const { t, ago } = window.I18N;
 const qs = new URLSearchParams(location.search);
 const roomId = ((location.pathname.match(/\/r\/([a-z0-9]{4,12})/i) || [])[1] || qs.get('r') || '').toLowerCase();
 const MASTER_ID = 'stonx-wr2-' + roomId;
@@ -262,8 +265,9 @@ const pill = (id, t) => { const el = $(id); el.style.display = t ? '' : 'none'; 
 // ---------------- local persistence ----------------
 const SKEY = 'wr2_room_' + roomId;
 let room = (() => { try { return JSON.parse(store.get(SKEY)) || null; } catch (e) { return null; } })() ||
-  { v: 0, title: store.get('wr2_title_' + roomId) || 'غرفة مشاهدة', movie: null, status: 'stopped', startedAt: 0, base: 0, pausedAt: 0, auto: false };
+  { v: 0, title: store.get('wr2_title_' + roomId) || '', movie: null, status: 'stopped', startedAt: 0, base: 0, pausedAt: 0, auto: false };
 const saveRoom = () => store.set(SKEY, JSON.stringify(room));
+const titleOf = () => (room.title && room.title !== 'غرفة مشاهدة' ? room.title : t('roomTitle'));   // the default name follows each person's language
 // ---- who may be in the room: the owner (whoever made it) lets people in. While the owner is away, the "boss" acts for
 // them: whoever already has the whole movie (the oldest in the room among those), else simply the oldest. The owner
 // takes over again as soon as they're back. Anyone else who opens the link waits in "requests" until let in.
@@ -292,7 +296,7 @@ const partKey = (mid, i) => `${mid}:${String(i).padStart(5, '0')}`;
 const mem = new Map(); let storageLow = false;
 async function savePart(mid, i, rec) {
   try { await idb.put(partKey(mid, i), rec); }
-  catch (e) { console.warn('idb put failed', e); mem.set(partKey(mid, i), rec); if (!storageLow) { storageLow = true; toast('⚠️ مساحة الموبايل قليلة — هنكمّل من الذاكرة'); } }
+  catch (e) { console.warn('idb put failed', e); mem.set(partKey(mid, i), rec); if (!storageLow) { storageLow = true; toast(t('lowSpace')); } }
 }
 // the device that picked an MP4 never stores a second copy: any part is cut from the original file on demand
 const built = new Map();
@@ -341,24 +345,24 @@ async function importSource(file, mid, resume) {
     chunkBytes: RAW,
     saveChunk: async (i, blob, copied) => {
       const k = rawKey(mid, i);
-      try { await idb.put(k, blob); } catch (e) { mem.set(k, blob); if (!storageLow) { storageLow = true; toast('⚠️ مساحة الموبايل قليلة — هنكمّل من الذاكرة'); } }
+      try { await idb.put(k, blob); } catch (e) { mem.set(k, blob); if (!storageLow) { storageLow = true; toast(t('lowSpace')); } }
       copiedBytes = copied;
       idb.put(`S:${mid}`, { copied, size: file.size }).catch(() => {});
       markAvailable();
       if (!plan) { prepInfo = { name: file.name.replace(/\.[^.]+$/, ''), pct: Math.round((copied / file.size) * 100) }; send({ t: 'prep', ...prepInfo }); }
       const pct = copied / file.size, speed = copied / 1048576 / Math.max(0.5, (Date.now() - t0) / 1000);
-      upUI(`${plan ? 'بنحفظ الفيلم' : 'بنقرا الفيلم'}: ${Math.round(pct * 100)}%`, pct,
-        `${speed.toFixed(0)} MB/s` + (plan ? ' — تقدر تشغّل عادي والباقي بيتحفظ.' : ' — الفيلم ده فهرسه في آخره، فلازم نقراه للآخر الأول.'));
+      upUI(t(plan ? 'saving' : 'reading', { p: Math.round(pct * 100) }), pct,
+        `${speed.toFixed(0)} MB/s` + t(plan ? 'savingSub' : 'readingSub'));
     },
     onMoov: async (moovBytes) => {
       plan = await adoptPlan(mid, moovBytes);
       prepInfo = null; send({ t: 'prep', done: true });
       if (!plan) return;
       idb.put(`M:${mid}`, new Blob([moovBytes])).catch(() => {});
-      if (!/^(avc1|avc3)$/.test(plan.videoCodec) && !confirm(`الفيديو بصيغة ${plan.videoCodec.toUpperCase()} — ممكن مايشتغلش على كل الأجهزة (الأفضل H.264). نكمل؟`)) throw new Error('اتلغى');
-      if (resume) { if (plan.ranges.length !== parts().length) throw new Error('ده مش نفس الملف'); }
+      if (!/^(avc1|avc3)$/.test(plan.videoCodec) && !confirm(t('codecAsk', { c: plan.videoCodec.toUpperCase() }))) throw new Error(t('cancelled'));
+      if (resume) { if (plan.ranges.length !== parts().length) throw new Error(t('notSameFile')); }
       else act('movie', { movie: { id: mid, name: file.name.replace(/\.[^.]+$/, ''), src: cid, parts: plan.ranges.map((x, i) => ({ i, duration: x.duration })) } });
-      toast('الفيلم جاهز 🎉 تقدر تشغّل');
+      toast(t('ready'));
       upOpen = false; $('up').classList.remove('show');
       markAvailable();
     },
@@ -425,9 +429,9 @@ function applyRoom(next, from) {
   const oldReq = new Set((room.req || []).map((x) => x.cid));
   room = next; saveRoom();
   if (!isMaster) for (const p of live()) if (p.id !== MASTER_ID && room.owner && !approved(p.cid)) { peers.delete(p.id); try { p.ctl && p.ctl.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} refreshConn(); }
-  if (isBoss()) for (const r of room.req || []) if (!oldReq.has(r.cid)) { toast(`🔔 ${r.name} عايز يدخل الغرفة`); ding(); }
+  if (isBoss()) for (const r of room.req || []) if (!oldReq.has(r.cid)) { toast(t('wantsIn', { n: r.name })); ding(); }
   setPeerPill();
-  $('title').textContent = $('gateTitle').textContent = room.title; document.title = 'STONX · ' + room.title;
+  $('title').textContent = $('gateTitle').textContent = titleOf(); document.title = 'STONX · ' + titleOf();
   if (movieChanged) {
     for (const [k, u] of urls) if (typeof k === 'number') URL.revokeObjectURL(u);
     urls.clear(); trims.clear(); loaded = [null, null]; inflight.clear(); waitSince.clear(); mem.clear();
@@ -459,15 +463,15 @@ function handleAct(a, from) {
 }
 // ---- the door (master only): let someone in, turn them away, or send them back out to the requests
 function door(a, who, from) {
-  const reply = (t) => (from ? sendTo(from, { t: 'note', text: t }) : toast(t));
-  if (!room.owner || !(who === room.owner || who === room.boss)) return reply('الموافقة لصاحب الغرفة بس');
+  const reply = (k) => (from ? sendTo(from, { t: 'note', key: k, text: t(k) }) : toast(t(k)));
+  if (!room.owner || !(who === room.owner || who === room.boss)) return reply('onlyOwner');
   const target = typeof a.cid === 'string' ? a.cid : '';
   const p = [...peers.values()].find((x) => x.cid === target && x.ready);
   if (a.action === 'approve') {
-    if (live().length + (approved(cid) ? 1 : 0) >= MAX) return reply('الغرفة مليانة (5 أشخاص)');
+    if (live().length + (approved(cid) ? 1 : 0) >= MAX) return reply('roomFull5');
     commit((r) => { r.ok = [...new Set([...(r.ok || []), target])]; if (r.no) delete r.no[target]; });
     if (p && p.pending) {
-      p.pending = false; sendTo(p, { t: 'ok' }); sendTo(p, { t: 'room', room }); toast(`🟢 ${p.name} دخل الغرفة`); remember(p);
+      p.pending = false; sendTo(p, { t: 'ok' }); sendTo(p, { t: 'room', room }); toast(t('joinedRoom', { n: p.name })); remember(p);
       sendTo(p, haveMsg()); if (lastBufSent) sendTo(p, { t: 'buf', on: true });
     }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss(); pumpWants();
@@ -478,16 +482,16 @@ function door(a, who, from) {
     updReq();
   }
   if (a.action === 'remove') {
-    if (target === room.owner) return reply('مينفعش تشيل صاحب الغرفة');
+    if (target === room.owner) return reply('cantRemoveOwner');
     commit((r) => { r.ok = (r.ok || []).filter((x) => x !== target); });
-    if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(`${p.name} اتشال من البث`); }
+    if (p && !p.pending) { p.pending = true; sendTo(p, { t: 'wait' }); for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i); toast(t('removed', { n: p.name })); }
     selfCheck(); updReq(); roster(); refreshConn(); pickBoss();
   }
 }
 // people waiting at the door, as the room sees them
 function updReq() {
   if (!isMaster) return;
-  const req = [...peers.values()].filter((p) => p.pending && p.ctl && p.ctl.open).map((p) => ({ cid: p.cid, name: p.name || 'ضيف' }));
+  const req = [...peers.values()].filter((p) => p.pending && p.ctl && p.ctl.open).map((p) => ({ cid: p.cid, name: p.name || t('guest') }));
   if (JSON.stringify(req) !== JSON.stringify(room.req || [])) commit((r) => { r.req = req; });
 }
 // who looks after the door right now
@@ -572,7 +576,7 @@ setInterval(async () => {
 }, 5000);
 function setPeerPill() {
   const rq = isBoss() ? (room.req || []).length : 0;
-  $('memBtn').textContent = `👥 الأعضاء ${live().length + 1}` + (rq ? ` · 🔔${rq}` : ''); renderMembers();
+  $('memBtn').textContent = `👥 ${t('members')} ${live().length + 1}` + (rq ? ` · 🔔${rq}` : ''); renderMembers();
 }
 let dingCtx = null;
 function ding() {
@@ -588,16 +592,11 @@ function ding() {
 // everyone who has been in this room, so the list can also show who stepped out and since when
 const MKEY = 'wr2_members_' + roomId;
 let known = (() => { try { return JSON.parse(store.get(MKEY)) || {}; } catch (e) { return {}; } })();   // cid -> { name, seen }
-function remember(p) { if (!p.cid) return; known[p.cid] = { name: p.name || 'ضيف', seen: Date.now() }; store.set(MKEY, JSON.stringify(known)); }
-function ago(t) {
-  const m = Math.floor((Date.now() - t) / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
-  return m < 1 ? 'من شوية' : m < 2 ? 'من دقيقة' : m < 11 ? `من ${m} دقايق` : m < 60 ? `من ${m} دقيقة`
-    : h < 2 ? 'من ساعة' : h < 11 ? `من ${h} ساعات` : h < 24 ? `من ${h} ساعة` : d < 2 ? 'من يوم' : `من ${d} أيام`;
-}
+function remember(p) { if (!p.cid) return; known[p.cid] = { name: p.name || t('guest'), seen: Date.now() }; store.set(MKEY, JSON.stringify(known)); }
 function renderMembers() {
   if (!$('members').classList.contains('show')) return;
   const n = parts().length, mid = room.movie && room.movie.id;
-  const what = (c, got) => !room.movie ? '' : c === room.movie.src ? 'صاحب الفيلم 🎬' : got >= n ? 'الفيلم كله عنده ✅' : `وصله ${Math.round((got / n) * 100)}% من الفيلم`;
+  const what = (c, got) => !room.movie ? '' : c === room.movie.src ? t('movieOwner') : got >= n ? t('hasAll') : t('gotPct', { p: Math.round((got / n) * 100) });
   const btn = (txt, cls, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = cls; b.onclick = (e) => { e.stopPropagation(); fn(); }; return b; };
   const row = (name, state, kind, acts) => {
     const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('div'), b = document.createElement('b'), sm = document.createElement('small');
@@ -607,20 +606,20 @@ function renderMembers() {
     return r;
   };
   const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '');
-  const role = (c) => (c === room.owner ? 'صاحب الغرفة' : c === room.boss ? 'المسؤول لحد ما صاحب الغرفة يرجع' : '');
-  const boss = isBoss(), list = [], h = (t) => { const x = document.createElement('h4'); x.textContent = t; return x; };
+  const role = (c) => (c === room.owner ? t('owner') : c === room.boss ? t('boss') : '');
+  const boss = isBoss(), list = [], h = (s) => { const x = document.createElement('h4'); x.textContent = s; return x; };
   const reqs = boss ? (room.req || []) : [];
   if (reqs.length) {
-    list.push(h(`طلبات الدخول (${reqs.length})`));
-    for (const q of reqs) list.push(row(q.name, 'عايز يدخل الغرفة', 'req', [btn('✅ قبول', 'yes', () => act('approve', { cid: q.cid })), btn('❌', 'no', () => act('reject', { cid: q.cid }))]));
+    list.push(h(t('reqs', { n: reqs.length })));
+    for (const q of reqs) list.push(row(q.name, t('wantsInRow'), 'req', [btn(t('approve'), 'yes', () => act('approve', { cid: q.cid })), btn('❌', 'no', () => act('reject', { cid: q.cid }))]));
   }
   const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]);
-  list.push(h('في البث'));
-  list.push(row((store.get('wr_name') || 'ضيف') + ' (انت)' + tag(cid), [role(cid), what(cid, have.size)].filter(Boolean).join(' · ') || 'موجود في الغرفة', 'on'));
-  for (const p of on) list.push(row((p.name || 'ضيف') + tag(p.cid), [role(p.cid) || 'موجود في الغرفة' + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), 'on',
-    boss && p.cid !== room.owner ? [btn('شيله', 'no', () => { if (confirm(`تشيل ${p.name || 'ضيف'} من البث؟ هيرجع لطلبات الدخول.`)) act('remove', { cid: p.cid }); })] : null));
+  list.push(h(t('inStream')));
+  list.push(row((store.get('wr_name') || t('guest')) + ` (${t('you')})` + tag(cid), [role(cid), what(cid, have.size)].filter(Boolean).join(' · ') || t('here'), 'on'));
+  for (const p of on) list.push(row((p.name || t('guest')) + tag(p.cid), [role(p.cid) || t('here') + (p.link || ''), what(p.cid, p.mid === mid ? p.have.size : 0)].filter(Boolean).join(' · '), 'on',
+    boss && p.cid !== room.owner ? [btn(t('removeBtn'), 'no', () => { if (confirm(t('removeAsk', { n: p.name || t('guest') }))) act('remove', { cid: p.cid }); })] : null));
   const gone = Object.entries(known).filter(([c]) => !here.has(c) && !reqs.some((q) => q.cid === c)).sort((a, b) => b[1].seen - a[1].seen).slice(0, 8);
-  if (gone.length) { list.push(h('مش موجودين')); gone.forEach(([c, k]) => list.push(row(k.name + tag(c), `خرج ${ago(k.seen)}`, 'off'))); }
+  if (gone.length) { list.push(h(t('notHere'))); gone.forEach(([c, k]) => list.push(row(k.name + tag(c), t('leftAgo', { t: ago(k.seen) }), 'off'))); }
   $('memList').replaceChildren(...list);
 }
 $('memBtn').onclick = (e) => { e.stopPropagation(); $('menu').classList.remove('show'); $('members').classList.toggle('show'); renderMembers(); };
@@ -629,7 +628,7 @@ function wireCtl(c) {
   const p = P(c.peer);
   if (p.ctl && p.ctl !== c) { const old = p.ctl; p.ctl = null; try { old.close(); } catch (e) {} }
   p.ctl = c;
-  const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || 'ضيف', room: isMaster ? null : room, pos: position(), since: mySince });
+  const hello = () => c.send({ t: 'hello', cid, name: store.get('wr_name') || t('guest'), room: isMaster ? null : room, pos: position(), since: mySince });
   c.on('open', hello);
   c.on('data', (m) => onCtl(m, p, c));
   c.on('close', () => { if (p.ctl === c && peers.get(p.id) === p) dropPeer(p); });
@@ -655,7 +654,7 @@ function dropPeer(p) {
   peers.delete(p.id);
   try { p.dat && p.dat.close(); } catch (e) {}
   for (const [i, f] of inflight) if (f.from === p.id) inflight.delete(i);
-  if (p.ready && !p.pending) { toast(`${p.name || 'ضيف'} خرج من الغرفة`); remember(p); }
+  if (p.ready && !p.pending) { toast(t('leftRoom', { n: p.name || t('guest') })); remember(p); }
   if (p.pending) updReq();
   typers.delete(p.id); drawTyping();
   refreshConn(); roster(); checkWaiting(); pumpWants();
@@ -676,7 +675,7 @@ async function connect() {
     p.on('open', () => resolve(p));
     p.on('error', (e) => { if (e.type === 'unavailable-id') { p.destroy(); resolve(null); } else if (!p.open) { p.destroy(); resolve('err'); } });
   });
-  if (asMaster === 'err') { $('memBtn').textContent = '⚠️ بنحاول نتصل…'; return setTimeout(connect, 4000); }
+  if (asMaster === 'err') { $('memBtn').textContent = t('connecting'); return setTimeout(connect, 4000); }
   if (asMaster) {
     peer = asMaster; isMaster = true;
     if (!room.owner && hadState) { room.owner = cid; room.ok = [...new Set([...(room.ok || []), ...Object.keys(known)])]; saveRoom(); }   // a room from before owners existed
@@ -724,8 +723,8 @@ setInterval(() => {
 function onCtl(m, p, c) {
   if (!m || typeof m !== 'object') return;
   p.lastMsg = Date.now();
-  if (m.t === 'full') { stopped = true; showFatal('الغرفة مليانة', 'الغرفة تكفي 5 أشخاص بس.'); kill(peer); return; }
-  if (m.t === 'denied') { stopped = true; waiting = false; showFatal('مش هتقدر تدخل دلوقتي', 'صاحب الغرفة رفض طلب الدخول.'); kill(peer); return; }
+  if (m.t === 'full') { stopped = true; showFatal(t('fullT'), t('fullP')); kill(peer); return; }
+  if (m.t === 'denied') { stopped = true; waiting = false; showFatal(t('deniedT'), t('deniedP')); kill(peer); return; }
   if (m.t !== 'hello' && (c !== p.ctl || !p.ready)) return;
   if (p.pending) { if (m.t === 'bye') dropPeer(p); return; }   // someone still waiting at the door can't do anything else
   if (m.t === 'ping') return sendTo(p, { t: 'pong', t0: m.t0, t1: Date.now() });
@@ -738,7 +737,7 @@ function onCtl(m, p, c) {
       // a freshly started master adopts a guest's memory of the room if it is newer (or if the room had no owner yet)
       const r = { ...m.room }; if (r.status === 'playing') { r.status = 'paused'; r.pausedAt = Math.max(0, +m.pos || 0); r.auto = false; } applyRoom(r);
     }
-    p.cid = m.cid; p.name = String(m.name || 'ضيف').slice(0, 24); p.since = +m.since || Date.now();
+    p.cid = m.cid; p.name = String(m.name || t('guest')).slice(0, 24); p.since = +m.since || Date.now();
     if (!isMaster && p.id !== MASTER_ID && !approved(m.cid)) { peers.delete(p.id); try { c.close(); } catch (e) {} try { p.dat && p.dat.close(); } catch (e) {} return; }
     if (isMaster) {
       const no = (room.no || {})[m.cid];
@@ -747,7 +746,7 @@ function onCtl(m, p, c) {
       p.pending = false;
     }
     const fresh = !p.ready; p.ready = true; refreshConn();
-    if (fresh) toast(`🟢 ${p.name} معاك في الغرفة`);
+    if (fresh) toast(t('withYou', { n: p.name }));
     remember(p);
     if (isMaster) { selfCheck(); commit(() => {}); roster(); pickBoss(); } else if (p.id === MASTER_ID) syncClock();
     sendTo(p, haveMsg());
@@ -760,8 +759,8 @@ function onCtl(m, p, c) {
   if (m.t === 'peers') { if (!isMaster && Array.isArray(m.ids) && peer) m.ids.forEach((id) => typeof id === 'string' && peer.id < id && linkTo(id)); return; }
   if (m.t === 'room') { if (p.id === MASTER_ID && !isMaster) { waiting = false; applyRoom(m.room); pumpWants(); } return; }
   if (m.t === 'wait') { if (p.id === MASTER_ID && !isMaster) goWait(); return; }
-  if (m.t === 'ok') { if (p.id === MASTER_ID && waiting) { waiting = false; toast('✅ اتقبلت — أهلاً بيك في الغرفة'); } return; }
-  if (m.t === 'note') { if (typeof m.text === 'string') toast(m.text.slice(0, 80)); return; }
+  if (m.t === 'ok') { if (p.id === MASTER_ID && waiting) { waiting = false; toast(t('accepted')); } return; }
+  if (m.t === 'note') { if (typeof m.key === 'string' && /^\w+$/.test(m.key)) toast(t(m.key)); else if (typeof m.text === 'string') toast(m.text.slice(0, 80)); return; }
   if (m.t === 'act') { if (isMaster) handleAct(m, p); return; }
   if (m.t === 'bye') { dropPeer(p); return; }
   if (m.t === 'update') { onUpdateMsg(m); return; }
@@ -771,7 +770,7 @@ function onCtl(m, p, c) {
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if (m.t === 'react') { if (isEmoji(m.e)) flyEmoji(m.e); return; }
   if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, p.name, !!m.to); return; }
-  if (m.t === 'typing') { if (m.on) typers.set(p.id, { name: p.name || 'ضيف', until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
+  if (m.t === 'typing') { if (m.on) typers.set(p.id, { name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -888,7 +887,7 @@ async function pickMovie(file, resume) {
   preparing = true; sourceFile = file;
   let lock = null; try { lock = await navigator.wakeLock?.request('screen'); } catch (_) {}
   try {
-    upOpen = true; upUI('بنجهّز الفيلم…', null, 'ثواني ويبدأ.');
+    upOpen = true; upUI(t('prepMovie'), null, t('fewSecs'));
     const { splitMovie } = await import('/split.js');
     let mid = resume ? room.movie.id : 'm' + Date.now().toString(36);
     if (!resume) { await idb.del(IDBKeyRange.bound('', '\uffff')); have.clear(); }
@@ -896,7 +895,7 @@ async function pickMovie(file, resume) {
     quick = null;
     if (/\.(mp4|m4v|mov)$/i.test(file.name) || /^video\/(mp4|quicktime)$/.test(file.type)) {
       if (await importSource(file, mid, resume)) { setTimeout(upHide, 1500); return; }
-      upUI('بنجهّز الفيلم…', null, 'الملف ده محتاج تحويل، هياخد وقت أطول.');
+      upUI(t('prepMovie'), null, t('needsConvert'));
     }
     for await (const p of splitMovie(file, {
       noFast: true,
@@ -904,12 +903,12 @@ async function pickMovie(file, resume) {
       onFast: (build) => { quick = { mid, build }; },
       targetBytes: 12 * 1024 * 1024, firstBytes: 3 * 1024 * 1024,
       onStage: (t, r) => upUI(t, r),
-      confirmCodec: async (c) => confirm(`الفيديو بصيغة ${c.toUpperCase()} — ممكن مايشتغلش على كل الأجهزة (الأفضل H.264). نكمل؟`),
+      confirmCodec: async (c) => confirm(t('codecAsk', { c: c.toUpperCase() })),
       onPlan: async (plan) => {
         planned = plan.length;
-        if (resume) { if (plan.length !== parts().length) throw new Error('ده مش نفس الملف'); return; }
+        if (resume) { if (plan.length !== parts().length) throw new Error(t('notSameFile')); return; }
         act('movie', { movie: { id: mid, name: file.name.replace(/\.[^.]+$/, ''), src: cid, parts: plan.map((x, i) => ({ i, duration: x.duration })) } });
-        toast('الفيلم جاهز 🎉 تقدر تشغّل خلال ثواني');
+        toast(t('readySoon'));
         upOpen = false; $('up').classList.remove('show');  // get out of the way; 🛠️ up top opens it again
       },
     })) {
@@ -927,11 +926,11 @@ async function pickMovie(file, resume) {
         have.add(p.index);
         (waiters.get(p.index) || []).forEach((r) => r(rec)); waiters.delete(p.index);
       }
-      upUI(`بنجهّز الفيلم: ${p.index + 1} من ${planned}`, (p.index + 1) / planned, 'تقدر تشغّل عادي والباقي بيتجهز.');
+      upUI(t('prepPart', { i: p.index + 1, n: planned }), (p.index + 1) / planned, t('prepPartSub'));
     }
     setTimeout(upHide, 1500);
   } catch (e) {
-    upUI('⚠️ ' + (e.message || 'حصلت مشكلة'), 0, 'جرّب تاني، ولو المشكلة اتكررت ابعتلي الرسالة دي.', true);
+    upUI('⚠️ ' + (e.message || t('problem')), 0, t('tryAgain'), true);
     setTimeout(upHide, 12000);
   } finally { preparing = false; try { lock && lock.release(); } catch (_) {} }
 }
@@ -990,11 +989,11 @@ function tick() {
   if (!joined) return;
   if (waiting) {
     vids.forEach((v) => v.pause()); countdown(0); $('buffer').classList.remove('show');
-    return message('⏳ مستني الموافقة', room.owner || connected ? 'طلبت تدخل الغرفة. أول ما صاحب الغرفة يوافق هتدخل على طول.' : 'الغرفة فاضية دلوقتي. أول ما صاحبها أو حد من أعضائها يدخل، هيشوف طلبك.', '<div class="spin"></div>');
+    return message(t('waitT'), room.owner || connected ? t('waitP') : t('waitEmpty'), '<div class="spin"></div>');
   }
   const T = total(), pos = position(), playing = room.status === 'playing';
   $('live').classList.toggle('off', !playing);
-  $('liveTxt').textContent = playing ? 'شغّال' : room.auto ? 'بيحمّل…' : room.status === 'paused' ? 'متوقف' : 'مستني';
+  $('liveTxt').textContent = playing ? t('playing') : room.auto ? t('loading') : room.status === 'paused' ? t('paused') : t('waitingPill');
   $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
   const shown = Math.min(Math.max(pos, 0), T);
   $('time').textContent = fmt(dragging ? +$('seek').value : shown) + ' / ' + fmt(T);
@@ -1006,35 +1005,35 @@ function tick() {
     const n = parts().length;
     if (iAmSource()) {
       const others = live().filter((p) => p.cid !== cid), got = others.length ? Math.min(...others.map((p) => (p.mid === room.movie.id ? p.have.size : 0))) : 0;
-      pill('netPill', others.length ? (got >= n ? '✅ الفيلم وصل للكل' : `📤 وصل ${others.length > 1 ? 'للكل' : 'للتاني'} ${Math.round((got / n) * 100)}% · ${(txRate / 1048576).toFixed(1)}MB/s`) : '');
-    } else pill('netPill', have.size >= n ? '✅ الفيلم كله عندك' : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
+      pill('netPill', others.length ? (got >= n ? t('allGot') : t(others.length > 1 ? 'sentAll' : 'sentOne', { p: Math.round((got / n) * 100), r: (txRate / 1048576).toFixed(1) })) : '');
+    } else pill('netPill', have.size >= n ? t('youHaveAll') : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
   } else pill('netPill', '');
 
   if (!room.movie && (prepInfo || (peerPrep && connected))) {
     vids.forEach((v) => v.pause()); setBuffering(false);
     const pp = prepInfo || peerPrep;
-    return message(prepInfo ? `بنجهّز «${pp.name}»` : `${pp.who || 'حد'} بيجهّز «${pp.name}»`,
-      `${pp.pct}% — الفيلم ده فهرسه في آخر الملف، فلازم يتقري للآخر الأول. أول ما يخلص هيظهر عند الكل.`, '<div class="spin"></div>');
+    return message(prepInfo ? t('prepMine', { n: pp.name }) : t('prepOther', { w: pp.who || t('someone'), n: pp.name }),
+      t('prepLong', { p: pp.pct }), '<div class="spin"></div>');
   }
   if (!room.movie) {
     vids.forEach((v) => v.pause()); setBuffering(false);
-    return message('الغرفة جاهزة 🎬', connected ? 'اختاروا فيلم من جهاز أي حد فيكم.' : 'ابعت رابط الغرفة للي هيتفرجوا معاك (لحد 5)، واختار الفيلم.', '', { text: '🎬 اختار فيلم', fn: () => $('pickBtn').click() });
+    return message(t('roomReady'), connected ? t('pickTogether') : t('sendLink'), '', { text: t('pickMovie'), fn: () => $('pickBtn').click() });
   }
   if (iAmSource() && !have.size && !preparing) {
     vids.forEach((v) => v.pause());
-    return message('محتاجين ملف الفيلم تاني', 'الفيلم اتختار من الجهاز ده بس ملفاته اتمسحت. اختار نفس الملف تاني.', '', { text: '📂 اختار الملف', fn: () => { $('file').dataset.resume = '1'; $('file').click(); } });
+    return message(t('needFileT'), t('needFileP'), '', { text: t('pickFile'), fn: () => { $('file').dataset.resume = '1'; $('file').click(); } });
   }
   if (iAmSource() && have.size < parts().length && !preparing && !sourceFile) {
     // page was reloaded mid-way: parts we already cut are safe, the rest needs the file again
-    pill('netPill', '⚠️ اختار الملف تاني علشان نكمّل تجهيز الباقي');
+    pill('netPill', t('pickAgain'));
   }
   if (!iAmSource() && !connected && !have.has(currentIndex())) {
     vids.forEach((v) => v.pause()); setBuffering(false);
-    return message('مستنيين صاحب الفيلم…', 'الفيلم بيتبث من جهاز اللي اختاره، ولازم الصفحة عنده تكون مفتوحة.', '<div class="spin"></div>');
+    return message(t('waitOwnerT'), t('waitOwnerP'), '<div class="spin"></div>');
   }
   const waitStart = playing && now() < room.startedAt;  // short countdown so both start on the same frame
   countdown(waitStart && !room.auto ? (room.startedAt - now()) / 1000 : 0);
-  if (pos >= T) { vids.forEach((v) => v.pause()); setBuffering(false); return message('انتهى الفيلم 🎬', 'شكرًا إنكم اتفرجتوا سوا ❤️', '', { text: '↺ من الأول', fn: () => act('seek', { to: 0 }) }); }
+  if (pos >= T) { vids.forEach((v) => v.pause()); setBuffering(false); return message(t('endT'), t('endP'), '', { text: t('again'), fn: () => act('seek', { to: 0 }) }); }
   message('');
 
   const loc = locate(pos); if (!loc) return;
@@ -1081,20 +1080,20 @@ $('fsBtn').onclick = () => {
 $('menuBtn').onclick = (e) => { e.stopPropagation(); $('members').classList.remove('show'); $('menu').classList.toggle('show'); };
 document.addEventListener('click', (e) => { if (!e.target.closest('.panel')) { $('menu').classList.remove('show'); $('members').classList.remove('show'); } });
 $('pickBtn').onclick = () => {
-  if (preparing) return toast('في فيلم بيتجهز بالفعل');
-  if (room.movie && !confirm('ده هيغيّر الفيلم الحالي عند الكل. نكمل؟')) return;
+  if (preparing) return toast(t('busyPrep'));
+  if (room.movie && !confirm(t('changeAsk'))) return;
   $('menu').classList.remove('show'); delete $('file').dataset.resume; $('file').click();
 };
 $('file').onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) pickMovie(f, !!$('file').dataset.resume); };
 $('deleteBtn').onclick = async () => {
-  if (!room.movie || !confirm('تمسح الفيلم من الغرفة؟')) return;
+  if (!room.movie || !confirm(t('delAsk'))) return;
   act('delete'); $('menu').classList.remove('show');
 };
 $('shareBtn').onclick = async () => {
   $('menu').classList.remove('show');
   const url = location.origin + '/r/' + roomId;
-  try { if (navigator.share) await navigator.share({ title: 'تعالى نتفرج سوا 🎬', url }); else { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } }
-  catch (e) { try { await navigator.clipboard.writeText(url); toast('الرابط اتنسخ ✅'); } catch (_) { prompt('انسخ الرابط:', url); } }
+  try { if (navigator.share) await navigator.share({ title: t('shareTitle'), url }); else { await navigator.clipboard.writeText(url); toast(t('copied')); } }
+  catch (e) { try { await navigator.clipboard.writeText(url); toast(t('copied')); } catch (_) { prompt(t('copyIt'), url); } }
 };
 addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); $('playBtn').click(); } });
 addEventListener('beforeunload', (ev) => { if (iAmSource() && live().some((p) => p.cid !== cid && p.have.size < parts().length)) { ev.preventDefault(); ev.returnValue = ''; } });
@@ -1127,7 +1126,7 @@ function flyEmoji(e) {
 function addChat(text, mine, who, priv) {
   const d = document.createElement('div'), n = document.createElement('span');
   d.className = mine ? 'me' : 'peer';
-  n.className = 'who'; n.textContent = (mine ? 'انت' : who || 'ضيف') + ':';
+  n.className = 'who'; n.textContent = (mine ? t('you') : who || t('guest')) + ':';
   d.append(n);
   if (priv) { const a = document.createElement('span'); a.className = 'at'; a.textContent = '@'; d.append(a); }   // a private message, just for the people mentioned
   d.append(document.createTextNode(text));
@@ -1136,8 +1135,8 @@ function addChat(text, mine, who, priv) {
   setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
 }
 const editBtn = document.createElement('button'), emojiIn = document.createElement('input');
-editBtn.type = 'button'; editBtn.className = 'edit'; editBtn.setAttribute('aria-label', 'تعديل');
-emojiIn.setAttribute('aria-label', 'ضيف إيموجي'); emojiIn.autocomplete = 'off';
+editBtn.type = 'button'; editBtn.className = 'edit'; editBtn.setAttribute('aria-label', t('aEdit'));
+emojiIn.setAttribute('aria-label', t('aAddEmoji')); emojiIn.autocomplete = 'off';
 function setEditing(on) { $('tray').classList.toggle('editing', on); if (!on) emojiIn.blur(); stopBurst(); }
 // a quick tap sends one; press and hold (without sliding) and it keeps flying, faster and faster, until you let go.
 // sliding the row left/right to scroll never sends anything.
@@ -1195,10 +1194,10 @@ $('chatBtn').onclick = (e) => {
 // ---- "so-and-so is typing…": goes only to whoever will get the message (the people mentioned, or everyone)
 const typers = new Map();   // peer id -> { name, until }
 function drawTyping() {
-  const t = Date.now(); for (const [k, v] of typers) if (v.until < t) typers.delete(k);
+  const now0 = Date.now(); for (const [k, v] of typers) if (v.until < now0) typers.delete(k);
   const n = [...typers.values()].map((v) => v.name), el = $('typing');
   if (!n.length) { el.replaceChildren(); return; }
-  const txt = n.length === 1 ? `${n[0]} بيكتب…` : n.length === 2 ? `${n[0]} و${n[1]} بيكتبوا…` : `${n.length} بيكتبوا…`;
+  const txt = n.length === 1 ? t('typing1', { a: n[0] }) : n.length === 2 ? t('typing2', { a: n[0], b: n[1] }) : t('typingN', { n: n.length });
   const dots = document.createElement('i'); dots.innerHTML = '<b></b><b></b><b></b>';
   el.replaceChildren(dots, document.createTextNode(txt));
 }
@@ -1217,13 +1216,13 @@ $('chatIn').addEventListener('input', typingPing);
 $('chatIn').addEventListener('blur', typingOff);
 $('chatbar').onsubmit = (e) => {
   e.preventDefault();
-  const t = $('chatIn').value.trim().slice(0, 120); if (!t) return;
+  const msg = $('chatIn').value.trim().slice(0, 120); if (!msg) return;
   if (picked.size) {
     const to = live().filter((p) => picked.has(p.cid));
-    if (!to.length) return toast('اللي اخترتهم مش موجودين دلوقتي');
-    to.forEach((p) => sendTo(p, { t: 'chat', text: t, to: true }));
-    addChat(t, true, '', true);
-  } else { addChat(t, true); send({ t: 'chat', text: t }); }
+    if (!to.length) return toast(t('pickedGone'));
+    to.forEach((p) => sendTo(p, { t: 'chat', text: msg, to: true }));
+    addChat(msg, true, '', true);
+  } else { addChat(msg, true); send({ t: 'chat', text: msg }); }
   typingTo = null; $('chatIn').value = ''; picked.clear(); drawChips(); hideMention();
 };
 // ---- @mentions: type @ to pick people; the message then goes only to them (with an @ before it, no names)
@@ -1241,18 +1240,18 @@ function hideMention() { atFrom = -1; $('mention').classList.remove('show'); }
 function pickMention(p) {
   const el = $('chatIn'), v = el.value, end = el.selectionStart ?? v.length;
   el.value = v.slice(0, atFrom) + v.slice(end); el.setSelectionRange(atFrom, atFrom);
-  picked.set(p.cid, p.name || 'ضيف'); drawChips(); hideMention(); el.focus();
+  picked.set(p.cid, p.name || t('guest')); drawChips(); hideMention(); el.focus();
 }
 function showMention() {
   const el = $('chatIn'), v = el.value, caret = el.selectionStart ?? v.length, at = v.lastIndexOf('@', caret - 1);
   if (at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return hideMention();
   const q = v.slice(at + 1, caret).trim().toLowerCase();
-  atList = live().filter((p) => !picked.has(p.cid) && (p.name || 'ضيف').toLowerCase().includes(q));
+  atList = live().filter((p) => !picked.has(p.cid) && (p.name || t('guest')).toLowerCase().includes(q));
   if (!atList.length) return hideMention();
   atFrom = at; atHi = Math.min(atHi, atList.length - 1);
   $('mention').replaceChildren(...atList.map((p, k) => {
-    const r = document.createElement('div'), i = document.createElement('i'), t = document.createElement('span');
-    t.textContent = p.name || 'ضيف'; r.append(i, t); if (k === atHi) r.className = 'hi';
+    const r = document.createElement('div'), i = document.createElement('i'), nm = document.createElement('span');
+    nm.textContent = p.name || t('guest'); r.append(i, nm); if (k === atHi) r.className = 'hi';
     r.onpointerdown = (e) => { e.preventDefault(); pickMention(p); };   // keep the keyboard open
     return r;
   }));
@@ -1291,7 +1290,7 @@ function reloadNow() {
 }
 function goUpdate(delay) {
   if (updating || preparing) return;
-  updating = true; toast('✨ بنحدّث الموقع… ثواني وهنكمّل');
+  updating = true; toast(t('updating'));
   setTimeout(reloadNow, delay);
 }
 function startUpdate() {
@@ -1329,11 +1328,11 @@ setTimeout(checkUpdate, 4000);
 
 // ---------------- join ----------------
 $('nameIn').value = store.get('wr_name') || '';
-$('title').textContent = $('gateTitle').textContent = room.title;
+$('title').textContent = $('gateTitle').textContent = titleOf(); document.title = 'STONX · ' + titleOf();
 let wakeLockSentinel = null;
 async function keepAwake() { try { if (!wakeLockSentinel || wakeLockSentinel.released) wakeLockSentinel = await navigator.wakeLock.request('screen'); } catch (_) {} }
 async function join() {
-  const name = $('nameIn').value.trim() || 'ضيف';
+  const name = $('nameIn').value.trim() || t('guest');
   store.set('wr_name', name);
   vids.forEach((v) => { v.muted = true; v.play().catch(() => {}); v.pause(); });  // unlock playback inside the tap
   joined = true; muted = false; show(0);
@@ -1346,7 +1345,7 @@ async function join() {
 $('joinBtn').onclick = join;
 $('nameIn').onkeydown = (e) => e.key === 'Enter' && join();
 try { if (sessionStorage.getItem('wr_autojoin') && store.get('wr_name')) { sessionStorage.removeItem('wr_autojoin'); setTimeout(join, 0); } } catch (_) {}
-if (!roomId) showFatal('رابط غلط', 'افتح رابط الغرفة اللي اتبعتلك.');
+if (!roomId) showFatal(t('badLinkT'), t('badLinkP'));
 setInterval(tick, 300);
 setPeerPill();
 window.__wr = { get peerId() { return peer && peer.id; }, get peerOpen() { return !!(peer && peer.open && !peer.destroyed); }, get waiting() { return waiting; }, peers, get name() { return store.get('wr_name'); }, checkUpdate, get room() { return room; }, have, get connected() { return connected; }, get isMaster() { return isMaster; } };
