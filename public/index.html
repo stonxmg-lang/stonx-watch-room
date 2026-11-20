@@ -11,39 +11,89 @@
 <link rel="shortcut icon" href="/favicon.ico">
 <link rel="icon" href="/icon-192.webp">
 <link rel="manifest" href="/manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#07080b; --fg:#eef0f3; --mut:#8a909c; --acc:#38e07b; --line:#1f232c; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { min-height:100vh; background:radial-gradient(circle at 50% 30%, #12201a 0%, #07080b 60%); color:var(--fg); font-family:Cairo,system-ui,sans-serif;
-         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:24px; text-align:center; }
-  .brand { font-weight:800; letter-spacing:.25em; font-size:13px; color:var(--mut); }
-  h1 { font-size:clamp(30px,8vw,54px); font-weight:800; line-height:1.2; }
-  h1 span { color:var(--acc); }
-  p { color:var(--mut); max-width:460px; line-height:1.9; }
-  .box { width:100%; max-width:380px; display:flex; flex-direction:column; gap:12px; }
-  input { font:inherit; width:100%; background:#0b0d12cc; border:1px solid var(--line); color:var(--fg); border-radius:14px; padding:13px 16px; text-align:center; }
-  button { font:inherit; font-weight:800; font-size:17px; padding:14px; border-radius:14px; border:0; cursor:pointer; }
-  .pri { background:var(--acc); color:#04140a; box-shadow:0 10px 40px #38e07b33; }
-  .sec { background:#1a1e26; color:var(--fg); border:1px solid var(--line); }
-  .or { color:var(--mut); font-size:13px; }
-  .feat { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#b9bec7; }
-  .feat span { background:#ffffff0d; border:1px solid var(--line); padding:6px 12px; border-radius:99px; }
+  :root { --bg:#07080b; --fg:#eef0f3; --mut:#8a909c; --acc:#38e07b; --line:#1d2129; --card:#0e1015; --field:#090b0f; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html { background:var(--bg); }
+  body { min-height:100vh; min-height:100dvh; color:var(--fg); font-family:Cairo,system-ui,sans-serif;
+         background:radial-gradient(900px 520px at 50% -120px, #123322 0%, #0a1510 40%, transparent 75%), var(--bg);
+         display:flex; flex-direction:column; align-items:center; padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom)); }
+  .wrap { width:100%; max-width:420px; display:flex; flex-direction:column; gap:22px; flex:1; justify-content:center; }
+
+  /* header */
+  header { display:flex; align-items:center; gap:12px; }
+  header img { width:46px; height:46px; border-radius:13px; box-shadow:0 6px 22px #00e5ff30; }
+  header .n { font-weight:800; font-size:15px; letter-spacing:.14em; }
+  header .s { font-size:12px; color:var(--mut); }
+
+  /* hero */
+  .hero h1 { font-size:clamp(30px,8.5vw,40px); font-weight:800; line-height:1.25; }
+  .hero h1 span { color:var(--acc); }
+  .hero p { color:var(--mut); font-size:15px; line-height:1.85; margin-top:10px; }
+
+  /* card */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:18px; display:flex; flex-direction:column; gap:12px;
+          box-shadow:0 20px 60px #0007; }
+  .sec-t { font-size:13px; font-weight:700; color:#c3c8d0; }
+  input { font:inherit; font-size:16px; width:100%; height:50px; background:var(--field); border:1px solid var(--line); color:var(--fg); border-radius:13px; padding:0 15px;
+          outline:none; transition:border-color .15s; }
+  input:focus { border-color:#38e07b88; }
+  input::placeholder { color:#5d636e; }
+  #code { direction:ltr; text-align:right; }
+  #code:placeholder-shown { direction:rtl; }
+  button { font:inherit; font-weight:800; font-size:16px; height:50px; border-radius:13px; border:0; cursor:pointer; width:100%; transition:transform .1s, filter .15s; }
+  button:active { transform:scale(.98); }
+  .pri { background:var(--acc); color:#04140a; box-shadow:0 8px 26px #38e07b2e; }
+  .sec { background:#181c24; color:var(--fg); border:1px solid #262b35; }
+  .join { display:flex; gap:8px; } .join input { flex:1; min-width:0; } .join button { width:auto; padding:0 20px; flex:none; }
+  .or { display:flex; align-items:center; gap:10px; color:#5d636e; font-size:12px; margin:2px 0; }
+  .or::before, .or::after { content:''; flex:1; height:1px; background:var(--line); }
+  .err { font-size:12.5px; color:#ff6b78; display:none; } .err.show { display:block; }
+
+  /* features */
+  .feat { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .f { background:#0c0e13; border:1px solid var(--line); border-radius:15px; padding:13px; display:flex; gap:10px; align-items:flex-start; }
+  .f i { font-style:normal; font-size:19px; line-height:1.2; }
+  .f b { display:block; font-size:13.5px; font-weight:800; }
+  .f small { display:block; font-size:12px; color:var(--mut); line-height:1.6; margin-top:2px; }
+
+  footer { text-align:center; font-size:11.5px; color:#555b66; margin-top:26px; letter-spacing:.06em; }
 </style>
 </head>
 <body>
-  <img src="/icon-192.webp" alt="STONX Watch Room" width="80" height="80" style="border-radius:22px; box-shadow:0 8px 30px rgba(0,229,255,0.25); margin-bottom:-6px;">
-  <span class="brand">STONX · WATCH TOGETHER</span>
-  <h1>اتفرجوا <span>سوا</span><br>في نفس الثانية</h1>
-  <p>اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للتاني مباشرة بجودته الأصلية، وانتوا بتتكلموا على واتساب، حتى لو كل واحد في بلد.</p>
-  <div class="feat"><span>👥 لشخصين</span><span>🎮 الاتنين بيتحكموا</span><span>🎬 أي طول وأي حجم</span><span>🔒 من جهاز لجهاز</span></div>
-  <div class="box">
-    <input id="title" placeholder="اسم الغرفة (اختياري)" maxlength="40">
+<main class="wrap">
+  <header>
+    <img src="/icon-192.webp" alt="" width="46" height="46">
+    <div><div class="n">STONX</div><div class="s">Watch Room</div></div>
+  </header>
+
+  <section class="hero">
+    <h1>اتفرجوا <span>سوا</span><br>في نفس الثانية</h1>
+    <p>اعمل غرفة وابعت الرابط. الفيلم بيروح من جهازك للباقيين مباشرة بجودته الأصلية، حتى لو كل واحد في بلد.</p>
+  </section>
+
+  <section class="card">
+    <span class="sec-t">غرفة جديدة</span>
+    <input id="title" placeholder="اسم الغرفة (اختياري)" maxlength="40" autocomplete="off">
     <button class="pri" id="create">اعمل غرفة جديدة</button>
-    <span class="or">أو</span>
-    <input id="code" placeholder="كود الغرفة أو الرابط" dir="ltr">
-    <button class="sec" id="join">ادخل غرفة</button>
-  </div>
+    <div class="or">أو</div>
+    <span class="sec-t">عندك رابط أو كود؟</span>
+    <div class="join">
+      <input id="code" placeholder="كود الغرفة أو الرابط" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="sec" id="join">ادخل</button>
+    </div>
+    <span class="err" id="err">الكود ده مش مظبوط، اتأكد منه وجرّب تاني.</span>
+  </section>
+
+  <section class="feat">
+    <div class="f"><i>👥</i><div><b>لحد 5 أشخاص</b><small>كل اللي في الغرفة بيتفرجوا مع بعض</small></div></div>
+    <div class="f"><i>🎮</i><div><b>الكل بيتحكم</b><small>تشغيل وإيقاف وتقديم للكل</small></div></div>
+    <div class="f"><i>🎬</i><div><b>أي فيلم</b><small>أي طول وأي حجم بجودته</small></div></div>
+    <div class="f"><i>🔒</i><div><b>من جهاز لجهاز</b><small>من غير ما يترفع على سيرفر</small></div></div>
+  </section>
+</main>
+<footer>STONX · WATCH TOGETHER</footer>
 <script>
 const $ = (id) => document.getElementById(id);
 $('create').onclick = () => {
@@ -53,9 +103,11 @@ $('create').onclick = () => {
 };
 $('join').onclick = () => {
   const v = $('code').value.trim(); const m = v.match(/([a-z0-9]{4,12})\/?$/i);
-  if (m) location.href = '/r/' + m[1].toLowerCase();
+  if (m) location.href = '/r/' + m[1].toLowerCase(); else $('err').classList.add('show');
 };
+$('code').oninput = () => $('err').classList.remove('show');
 $('code').onkeydown = (e) => e.key === 'Enter' && $('join').click();
+$('title').onkeydown = (e) => e.key === 'Enter' && $('create').click();
 </script>
 </body>
 </html>
