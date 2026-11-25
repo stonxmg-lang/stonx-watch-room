@@ -735,7 +735,10 @@ function renderMembers() {
     return r;
   };
   const tag = (c) => (c === room.owner ? ' 👑' : c === room.boss ? ' ⭐' : '') + (room.lockCtl && hasCtl(c) ? ' 🎮' : '') + (isMuted(c) ? ' 🔇' : '');
-  const sub = (c, got, link) => [c === room.boss && c !== room.owner ? t('boss') : '', what(c, got) || t('here') + (link || '')].filter(Boolean).join(' · ');
+  // under each name: their part of the movie, how they're linked to me (⚡ direct / 🔁 through a relay) and, while
+  // they're still getting the movie, how fast it's coming in (each person reports their own speed every 2s)
+  const sub = (c, got, link, rate) => [c === room.boss && c !== room.owner ? t('boss') : '', what(c, got) || t('here'), (link || '').trim(),
+    rate != null && room.movie && c !== room.movie.src && got < n ? '⬇ ' + mbs(rate) + 'MB/s' : ''].filter(Boolean).join(' · ');
   const boss = isBoss(), list = [];
   const sec = (label, n, fold) => {
     const x = document.createElement('div'); x.className = 'sec' + (fold ? ' fold' + (memFold[fold] ? '' : ' closed') : '');
@@ -750,8 +753,8 @@ function renderMembers() {
   }
   const on = live(), here = new Set([cid, ...on.map((p) => p.cid)]);
   list.push(sec(t('inStream'), on.length + 1));
-  list.push(row(cid, store.get('wr_name') || t('guest'), sub(cid, have.size), 'on', null, tag(cid), true));
-  for (const p of on) list.push(row(p.cid, p.name || t('guest'), sub(p.cid, p.mid === mid ? p.have.size : 0, p.link), 'on',
+  list.push(row(cid, store.get('wr_name') || t('guest'), sub(cid, have.size, linkType.replace(/[ ·]/g, ''), rate), 'on', null, tag(cid), true));
+  for (const p of on) list.push(row(p.cid, p.name || t('guest'), sub(p.cid, p.mid === mid ? p.have.size : 0, p.link, Date.now() - (p.rateAt || 0) < 7000 ? p.rate : null), 'on',
     boss && p.cid !== room.owner ? [btn('✕', 'no', t('removeBtn'), () => { if (confirm(t('removeAsk', { n: p.name || t('guest') }))) act('remove', { cid: p.cid }); })] : null, tag(p.cid)));
   const nos = boss ? Object.entries(room.no || {}).filter(([c]) => noUntil(c) > now() && !approved(c)) : [];
   if (nos.length) {
@@ -916,6 +919,7 @@ function onCtl(m, p, c) {
   if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to, { c: p.cid, n: p.name, re: cleanRe(m.re), id: cleanId(m.id) }); return; }
   if (m.t === 'mreact') { onMsgReact(p, m); return; }
   if (m.t === 'typing') { if (m.on) typers.set(p.id, { cid: p.cid, name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
+  if (m.t === 'net') { p.rate = Math.max(0, +m.r || 0); p.rateAt = Date.now(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
 
@@ -975,6 +979,9 @@ function onData(p, d) {
   }
   if (p.rx) { p.rx.bufs.push(d); rxBytes += d.byteLength; }
 }
+// MB/s shown with two decimals below 1 (0.12 rather than a misleading 0.0)
+const mbs = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) : (b / 1048576).toFixed(2));
+setInterval(() => { if (room.movie && !iAmSource() && have.size < parts().length && live().length) send({ t: 'net', r: Math.round(rate) }); }, 2000);
 setInterval(() => { const t = Date.now(), dt = (t - rxT0) / 1000; rate = rate * 0.6 + (rxBytes / dt) * 0.4; txRate = txRate * 0.6 + (txBytes / dt) * 0.4; rxBytes = 0; txBytes = 0; rxT0 = t; }, 1000);
 // watchdog: a request that got no answer for a while (lost request, person left mid-part) is asked again
 setInterval(() => {
@@ -1179,8 +1186,8 @@ function tick() {
     const n = parts().length;
     if (iAmSource()) {
       const others = live().filter((p) => p.cid !== cid), got = others.length ? Math.min(...others.map((p) => (p.mid === room.movie.id ? p.have.size : 0))) : 0;
-      pill('netPill', others.length ? (got >= n ? t('allGot') : t(others.length > 1 ? 'sentAll' : 'sentOne', { p: Math.round((got / n) * 100), r: (txRate / 1048576).toFixed(1) })) : '');
-    } else pill('netPill', have.size >= n ? t('youHaveAll') : `⬇ ${(rate / 1048576).toFixed(1)}MB/s · ${Math.round((have.size / n) * 100)}%`);
+      pill('netPill', others.length ? (got >= n ? t('allGot') : t(others.length > 1 ? 'sentAll' : 'sentOne', { p: Math.round((got / n) * 100), r: mbs(txRate) })) : '');
+    } else pill('netPill', have.size >= n ? t('youHaveAll') : `⬇ ${mbs(rate)}MB/s · ${Math.round((have.size / n) * 100)}%`);
   } else pill('netPill', '');
 
   if (!room.movie && (prepInfo || (peerPrep && connected))) {
