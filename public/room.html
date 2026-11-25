@@ -51,7 +51,8 @@
   .ib small { font-size:10px; font-weight:800; }
   .seekwrap { position:relative; height:22px; display:flex; align-items:center; margin-bottom:4px; }
   .track { position:absolute; inset-inline:0; height:4px; border-radius:4px; background:#ffffff2e; overflow:hidden; }
-  .track b { display:block; height:100%; width:0; background:var(--red); }
+  .track b { position:relative; display:block; height:100%; width:0; background:var(--red); }
+  .track i { position:absolute; inset:0; }   /* grey: what everyone in the room already has */
   .seek { position:absolute; inset:0; width:100%; opacity:0; cursor:pointer; }
   .ctl .seekwrap:hover .track { height:6px; }
   /* where the room reacted the most: little bars rising above the timeline */
@@ -263,7 +264,7 @@
 </div>
 
 <div class="bar" id="bar">
-  <div class="seekwrap"><div class="heat" id="heat"></div><div class="track"><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
+  <div class="seekwrap"><div class="heat" id="heat"></div><div class="track"><i id="bufB"></i><b id="progB"></b></div><input type="range" class="seek" id="seek" min="0" max="0" step="1" value="0"></div>
   <div class="row">
     <button class="ib big" id="playBtn" aria-label="تشغيل" data-i18n-aria="aPlay"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
     <button class="ib" id="back10" aria-label="رجوع 10" data-i18n-aria="aBack"><small>−10</small></button>
@@ -1115,6 +1116,33 @@ function countdown(sec) {
   cdEl.firstChild.textContent = Math.ceil(sec);
 }
 
+// ---- the grey bar: the stretches of the movie that EVERYONE in the room already has, so it is the same on every
+// phone and only grows as fast as the slowest person. Parts can arrive out of order, so it can have gaps.
+let sharedSig = '';
+function sharedParts() {
+  if (!room.movie) return new Set();
+  const mid = room.movie.id, n = parts().length, sets = [have];
+  for (const p of live()) sets.push(p.mid === mid ? p.have : new Set());
+  const out = new Set();
+  for (let i = 0; i < n; i++) if (sets.every((x) => x.has(i))) out.add(i);
+  return out;
+}
+function drawShared(T) {
+  const el = $('bufB'); if (!el) return;
+  const ps = parts(), got = sharedParts(), segs = []; let acc = 0, from = -1;
+  for (let i = 0; i < ps.length; i++) {
+    if (got.has(i) && from < 0) from = acc;
+    acc += ps[i].duration;
+    if ((!got.has(i) || i === ps.length - 1) && from >= 0) { segs.push([from, got.has(i) ? acc : acc - ps[i].duration]); from = -1; }
+  }
+  const sig = T + '|' + segs.join(';'); if (sig === sharedSig) return; sharedSig = sig;
+  if (!T || !segs.length) { el.style.background = 'none'; return; }
+  const c = '#ffffff66', pct = (x) => ((x / T) * 100).toFixed(3) + '%', stops = [];
+  for (const [a, b] of segs) stops.push(`transparent ${pct(a)}`, `${c} ${pct(a)}`, `${c} ${pct(b)}`, `transparent ${pct(b)}`);
+  const dir = getComputedStyle(el).direction === 'rtl' ? 'to left' : 'to right';
+  el.style.background = `linear-gradient(${dir}, ${stops.join(', ')})`;
+}
+
 function tick() {
   if (!joined) return;
   if (waiting) {
@@ -1129,6 +1157,7 @@ function tick() {
   $('time').textContent = fmt(dragging ? +$('seek').value : shown) + ' / ' + fmt(T);
   $('progB').style.width = (T ? ((dragging ? +$('seek').value : shown) / T) * 100 : 0) + '%';
   $('seek').max = Math.floor(T); if (!dragging) $('seek').value = Math.floor(shown);
+  drawShared(T);
 
   // download / upload indicator
   if (room.movie) {
