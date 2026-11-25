@@ -183,6 +183,19 @@
   .rq.show { display:flex; } .rq .tx { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#cfd3da; }
   .rq .tx b { color:#5ff09a; margin-inline-end:5px; } .rq .x { flex:none; cursor:pointer; color:var(--mut); font:800 14px/1 system-ui,sans-serif; padding:4px; }
   .chatlog div { pointer-events:auto; cursor:pointer; } .chatlog .typing { pointer-events:none; }
+  /* WhatsApp-style reactions on a message: hold a message to pick, the result sits under it */
+  .chatlog div:not(.typing) { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .chatlog .rx { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .chatlog .rx:empty { display:none; }
+  .chatlog .rx b { display:inline-flex; align-items:center; gap:3px; background:#ffffff1c; border:1px solid #ffffff22; border-radius:99px; padding:0 7px;
+                   font-size:13px; line-height:22px; font-weight:800; }
+  .chatlog .rx b.mine { background:#5ff09a2e; border-color:#5ff09a77; }
+  .chatlog div.held { outline:2px solid #5ff09a88; }
+  .mpick { position:fixed; z-index:26; display:none; gap:2px; max-width:min(92vw,360px); overflow-x:auto; scrollbar-width:none; padding:5px 7px;
+           background:var(--card); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:99px; box-shadow:0 6px 24px #000a; }
+  .mpick.show { display:flex; } .mpick::-webkit-scrollbar { display:none; }
+  .mpick button { font-size:25px; line-height:1; background:none; border:0; padding:3px 4px; border-radius:50%; cursor:pointer; flex:none; }
+  .mpick button.on { background:#5ff09a33; }
   .chatlog .q { display:block; font-size:12px; font-weight:600; color:#cfd3da; opacity:.85; border-inline-start:2px solid #5ff09a; padding-inline-start:6px; margin-bottom:2px;
                 white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   .chatbar .chips:empty { display:none; }
@@ -293,6 +306,7 @@
 <div class="toast" id="toast"></div>
 <div class="fx" id="fx"></div>
 <div class="chatlog" id="chatlog"><div class="typing" id="typing"></div></div>
+<div class="mpick" id="mpick"></div>
 <div class="tray" id="tray"><div class="list" id="trayList"></div></div>
 <div class="mention" id="mention"></div>
 <form class="chatbar" id="chatbar" autocomplete="off"><div class="above" id="above"><div class="rq" id="rq"></div><div class="chips" id="chips"></div></div><input id="chatIn" maxlength="120" placeholder="اكتب حاجة…" data-i18n-ph="chatPh" enterkeyhint="send"><button type="submit" aria-label="إرسال" data-i18n-aria="aSend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.01 6.53L15 12 3.39 13.87z"/></svg></button></form>
@@ -899,7 +913,8 @@ function onCtl(m, p, c) {
   if (m.t === 'prep') { peerPrep = m.done ? null : { ...m, who: p.name }; return; }
   if ((m.t === 'react' || m.t === 'chat' || m.t === 'typing') && isMuted(p.cid)) { typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'react') { if (isEmoji(m.e) && (!room.emo || p.cid === room.owner || room.emo.includes(m.e))) { flyEmoji(m.e); noteReact(m.e, p.cid, p.name); } return; }
-  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to, { c: p.cid, n: p.name, re: cleanRe(m.re) }); return; }
+  if (m.t === 'chat') { typers.delete(p.id); drawTyping(); if (typeof m.text === 'string' && m.text.trim()) addChat(m.text.slice(0, 120), false, shown(p.cid, p.name), !!m.to, { c: p.cid, n: p.name, re: cleanRe(m.re), id: cleanId(m.id) }); return; }
+  if (m.t === 'mreact') { onMsgReact(p, m); return; }
   if (m.t === 'typing') { if (m.on) typers.set(p.id, { cid: p.cid, name: p.name || t('guest'), until: Date.now() + 6000 }); else typers.delete(p.id); drawTyping(); return; }
   if (m.t === 'want') { if (!p.queue.includes(m.i)) p.queue.push(m.i); serve(p); return; }
 }
@@ -1433,12 +1448,88 @@ function addChat(text, mine, who, priv, meta) {
   if (meta && meta.re) { const q = document.createElement('span'); q.className = 'q'; q.textContent = '↩ ' + (meta.re.c === cid ? t('you') : shown(meta.re.c, meta.re.n)) + ': ' + meta.re.x; d.append(q); }
   n.className = 'who'; n.textContent = (mine ? t('you') : who || t('guest')) + ':';
   d.append(n);
-  if (meta) d.onclick = (e) => { e.stopPropagation(); startReply({ c: meta.c, n: meta.n, x: text }); };   // tap a message to answer it
+  if (meta) d.onclick = (e) => { e.stopPropagation(); if (d._held) { d._held = false; return; } startReply({ c: meta.c, n: meta.n, x: text }); };   // tap a message to answer it
+  if (meta && meta.id) { d.dataset.mid = meta.id; msgInfo.set(meta.id, { priv: !!priv, author: meta.c, to: meta.to || null }); holdToReact(d, meta.id); }
   if (priv) { const a = document.createElement('span'); a.className = 'at'; a.textContent = '@'; d.append(a); }   // a private message, just for the people mentioned
   d.append(document.createTextNode(text));
   const log = $('chatlog'); log.insertBefore(d, $('typing'));
   while (log.children.length > 6) log.firstChild.remove();
-  setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 800); }, 8000);
+  keepShown(d);
+  if (meta && meta.id) drawMsgReacts(meta.id);
+}
+// a message fades after 8s; a new reaction (or holding it) brings it back for another 8s so everyone sees it
+function keepShown(d, ms = 8000) {
+  clearTimeout(d._fade); clearTimeout(d._gone); d.style.opacity = '';
+  d._fade = setTimeout(() => { if (d.classList.contains('held')) return keepShown(d, 3000); d.style.opacity = '0'; d._gone = setTimeout(() => d.remove(), 800); }, ms);
+}
+// ---- reactions on messages: press and hold a message (like WhatsApp), pick one of the room's emojis; the same one
+// again takes it off, another one replaces it. Everyone sees them under the message; tap them to see who.
+const msgReacts = new Map();   // message id -> Map(cid -> { e, n })
+const msgInfo = new Map();     // message id -> { priv, author, to }
+const newMsgId = () => cid.slice(0, 6) + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const cleanId = (x) => (typeof x === 'string' && /^[a-z0-9]{6,40}$/i.test(x) ? x : null);
+function holdToReact(d, id) {
+  let tm = null, x0 = 0, y0 = 0;
+  const stop = () => { clearTimeout(tm); tm = null; };
+  d.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; stop(); tm = setTimeout(() => { tm = null; d._held = true; openMsgPick(d, id); try { navigator.vibrate && navigator.vibrate(25); } catch (er) {} }, 450); });
+  d.addEventListener('pointermove', (e) => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => d.addEventListener(ev, stop));
+  d.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+function closeMsgPick() {
+  const pk = $('mpick'); pk.classList.remove('show'); pk._id = null;
+  document.querySelectorAll('.chatlog div.held').forEach((x) => { x.classList.remove('held'); keepShown(x, 4000); });
+}
+function openMsgPick(d, id) {
+  if (isMuted(cid)) return toast(t('mutedNow'));
+  closeMsgPick();
+  const pk = $('mpick'), mine = (msgReacts.get(id) || new Map()).get(cid);
+  pk.replaceChildren(...(emoSet() || reacts).map((e) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = e; if (mine && mine.e === e) b.className = 'on';
+    b.onpointerdown = (ev) => ev.preventDefault();
+    b.onclick = (ev) => { ev.stopPropagation(); reactToMsg(id, mine && mine.e === e ? '' : e); closeMsgPick(); };
+    return b;
+  }));
+  d.classList.add('held'); clearTimeout(d._fade); clearTimeout(d._gone); d.style.opacity = '';
+  pk._id = id; pk.classList.add('show'); pk.scrollLeft = 0;
+  const r = d.getBoundingClientRect(), w = pk.offsetWidth, h = pk.offsetHeight;
+  pk.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  pk.style.top = Math.max(8, r.top - h - 8) + 'px';
+}
+document.addEventListener('pointerdown', (e) => { if ($('mpick').classList.contains('show') && !e.target.closest('#mpick')) setTimeout(closeMsgPick, 0); });
+function setMsgReact(id, who, e, n) {
+  if (!msgReacts.has(id)) { msgReacts.set(id, new Map()); if (msgReacts.size > 200) msgReacts.delete(msgReacts.keys().next().value); }
+  const m = msgReacts.get(id); if (e) m.set(who, { e, n }); else m.delete(who);
+  drawMsgReacts(id, true);
+}
+function reactToMsg(id, e) {
+  if (isMuted(cid)) return toast(t('mutedNow'));
+  if (e && emoSet() && !emoSet().includes(e)) return;
+  setMsgReact(id, cid, e, store.get('wr_name') || t('guest'));
+  const info = msgInfo.get(id) || {}, msg = { t: 'mreact', id, e: e || '' };
+  if (!info.priv) return send(msg);
+  // a private (@) message: the reaction only goes to the people who could see it
+  const ok = new Set([info.author, ...(info.to || [])]);
+  live().filter((p) => ok.has(p.cid)).forEach((p) => sendTo(p, msg));
+}
+function onMsgReact(p, m) {
+  const id = cleanId(m.id); if (!id || isMuted(p.cid)) return;
+  const e = m.e === '' ? '' : isEmoji(m.e) ? m.e : null; if (e === null) return;
+  if (e && room.emo && p.cid !== room.owner && !room.emo.includes(e)) return;
+  setMsgReact(id, p.cid, e, p.name);
+}
+function drawMsgReacts(id, bump) {
+  const d = document.querySelector(`.chatlog div[data-mid="${id}"]`); if (!d) return;
+  let row = d.querySelector('.rx'); if (!row) { row = document.createElement('span'); row.className = 'rx'; d.append(row); }
+  const by = new Map();
+  for (const [c, r] of msgReacts.get(id) || []) { if (!by.has(r.e)) by.set(r.e, []); by.get(r.e).push([c, r.n]); }
+  row.replaceChildren(...[...by].map(([e, who]) => {
+    const b = document.createElement('b'); b.textContent = e + (who.length > 1 ? ' ' + who.length : '');
+    if (who.some(([c]) => c === cid)) b.className = 'mine';
+    b.onclick = (ev) => { ev.stopPropagation(); keepShown(d); toast(e + ' ' + (namesHidden() ? who.length : who.map(([c, n]) => (c === cid ? t('you') : shown(c, n))).join('، '))); };
+    return b;
+  }));
+  if (bump && !d.classList.contains('held')) keepShown(d);
 }
 const editBtn = document.createElement('button'), emojiIn = document.createElement('input');
 editBtn.type = 'button'; editBtn.className = 'edit'; editBtn.setAttribute('aria-label', t('aEdit'));
@@ -1535,13 +1626,14 @@ $('chatbar').onsubmit = (e) => {
   const msg = $('chatIn').value.trim().slice(0, 120); if (!msg) return;
   if (isMuted(cid)) { muteClose(); return toast(t('mutedNow')); }
   const re = replyTo ? { c: replyTo.c, n: replyTo.n, x: replyTo.x.slice(0, 60) } : undefined;
-  const mineMeta = { c: cid, n: store.get('wr_name') || t('guest'), re };
+  const id = newMsgId(), mineMeta = { c: cid, n: store.get('wr_name') || t('guest'), re, id };
   if (picked.size) {
     const to = live().filter((p) => picked.has(p.cid));
     if (!to.length) return toast(t('pickedGone'));
-    to.forEach((p) => sendTo(p, { t: 'chat', text: msg, to: true, re }));
+    mineMeta.to = to.map((p) => p.cid);
+    to.forEach((p) => sendTo(p, { t: 'chat', text: msg, to: true, re, id }));
     addChat(msg, true, '', true, mineMeta);
-  } else { addChat(msg, true, '', false, mineMeta); send({ t: 'chat', text: msg, re }); }
+  } else { addChat(msg, true, '', false, mineMeta); send({ t: 'chat', text: msg, re, id }); }
   typingTo = null; $('chatIn').value = ''; picked.clear(); drawChips(); hideMention(); replyTo = null; drawReply();
 };
 // ---- @mentions: type @ to pick people; the message then goes only to them (with an @ before it, no names)
