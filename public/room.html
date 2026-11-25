@@ -184,7 +184,7 @@
   .rq .tx b { color:#5ff09a; margin-inline-end:5px; } .rq .x { flex:none; cursor:pointer; color:var(--mut); font:800 14px/1 system-ui,sans-serif; padding:4px; }
   .chatlog div { pointer-events:auto; cursor:pointer; } .chatlog .typing { pointer-events:none; }
   /* WhatsApp-style reactions on a message: hold a message to pick, the result sits under it */
-  .chatlog div:not(.typing) { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .chatlog, .chatlog * { -webkit-user-select:none !important; user-select:none !important; -webkit-touch-callout:none !important; }
   .chatlog .rx { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
   .chatlog .rx:empty { display:none; }
   .chatlog .rx b { display:inline-flex; align-items:center; gap:3px; background:#ffffff1c; border:1px solid #ffffff22; border-radius:99px; padding:0 7px;
@@ -1471,10 +1471,13 @@ const cleanId = (x) => (typeof x === 'string' && /^[a-z0-9]{6,40}$/i.test(x) ? x
 function holdToReact(d, id) {
   let tm = null, x0 = 0, y0 = 0;
   const stop = () => { clearTimeout(tm); tm = null; };
-  d.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; stop(); tm = setTimeout(() => { tm = null; d._held = true; openMsgPick(d, id); try { navigator.vibrate && navigator.vibrate(25); } catch (er) {} }, 450); });
-  d.addEventListener('pointermove', (e) => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop(); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => d.addEventListener(ev, stop));
-  d.addEventListener('contextmenu', (e) => e.preventDefault());
+  const fire = () => { stop(); if ($('mpick')._id === id) return; d._held = true; openMsgPick(d, id); try { navigator.vibrate && navigator.vibrate(25); } catch (er) {} };
+  d.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; stop(); tm = setTimeout(fire, 420); });
+  d.addEventListener('pointermove', (e) => { if (tm && Math.hypot(e.clientX - x0, e.clientY - y0) > 12) stop(); });
+  ['pointerup', 'pointerleave'].forEach((ev) => d.addEventListener(ev, stop));
+  // phones turn a long press into a "context menu" (and cancel the pointer) — treat that as the hold itself
+  d.addEventListener('contextmenu', (e) => { e.preventDefault(); fire(); });
+  d.addEventListener('selectstart', (e) => e.preventDefault());
 }
 function closeMsgPick() {
   const pk = $('mpick'); pk.classList.remove('show'); pk._id = null;
