@@ -185,7 +185,7 @@ async function slices(read, T, a, b) {
 
 /**
  * Returns null if this file can't take the fast path (then the caller falls back to ffmpeg).
- * Otherwise { videoCodec, ranges:[{duration}], build(k) -> Promise<Blob> }.
+ * Otherwise { videoCodec, ranges:[{duration}], build(k, materialize=false) -> Promise<Blob> }.
  */
 export async function prepare(file, opts) {
   const top = await scanTop(file);
@@ -252,7 +252,7 @@ export function planFromMoov(buf, read, { firstBytes, targetBytes }) {
   }));
 
   const FTYP = box('ftyp', new TextEncoder().encode('isom'), u32s(0x200), new TextEncoder().encode('isomiso2avc1mp41'));
-  async function build(k) {
+  async function build(k, materialize = false) {
     const [va, vb] = vr[k];
     const hasA = A && ar[k][1] > ar[k][0];
     const vS = await slices(read, V, va, vb);
@@ -268,8 +268,8 @@ export function planFromMoov(buf, read, { firstBytes, targetBytes }) {
     const moovB = make(dataStart, dataStart + vS.bytes);
     const mdatHdr = u32s(8 + vS.bytes + aS.bytes); const mh = new Uint8Array(8); mh.set(mdatHdr); mh.set([0x6d, 0x64, 0x61, 0x74], 4);
     const lazy = new Blob([FTYP, moovB, mh, ...vS.out, ...aS.out], { type: 'video/mp4' });
-    // materialise so the part no longer depends on the picked file (safer for IndexedDB on Safari)
-    return new Blob([await lazy.arrayBuffer()], { type: 'video/mp4' });
+    // Keep the part lazy unless a caller (for example Safari persistence) explicitly needs a materialised copy.
+    return materialize ? new Blob([await lazy.arrayBuffer()], { type: 'video/mp4' }) : lazy;
   }
   return { videoCodec: V.codec, ranges, build };
 }
